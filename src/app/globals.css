@@ -108,6 +108,12 @@ body {
   backdrop-filter: blur(10px);
 }
 
+.card-glass-dark {
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(242, 193, 78, 0.18);
+  backdrop-filter: blur(10px);
+}
+
 .bg-noise {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
 }
@@ -137,6 +143,12 @@ body {
   background: linear-gradient(90deg, var(--color-gold-deep), transparent);
 }
 
+.full-bleed {
+  width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
 @keyframes float-slow {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-18px) rotate(3deg); }
@@ -153,4 +165,13 @@ body {
 
 .animate-glow-pulse {
   animation: glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s linear infinite;
 }

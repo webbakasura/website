@@ -19,13 +19,13 @@ export const metadata: Metadata = {
   description:
     "Royal dum-cooked biryani, slow-cooked with secret spices fit for a king. Once you start, you can't stop. Order Bakasura Biryani today.",
   icons: {
-    icon: "/images/logo-transparent.png",
+    icon: "/images/logo-transparent-v2.png",
   },
   openGraph: {
     title: "Bakasura Biryani | Eat Like a King",
     description:
       "Royal dum-cooked biryani, slow-cooked with secret spices fit for a king.",
-    images: ["/images/logo.png"],
+    images: ["/images/logo-v2.png"],
   },
 };
 
