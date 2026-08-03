@@ -91,7 +91,7 @@ export default function Footer() {
                 <MapPin size={15} className="mt-0.5 shrink-0 text-gold-deep" />
                 <span>
                   2-6-1533, NGO&apos;s Colony Road, Opp: Thirumala Bar, Gokul Nagar
-                  Junction, Hanamkonda - 506001
+                  Junction, Hanumakonda - 506001
                 </span>
               </li>
               <li>
@@ -105,7 +105,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <Clock size={15} className="shrink-0 text-gold-deep" />
-                11:00 AM – 11:00 PM, Daily
+                12–3 PM &amp; 6–9 PM, Daily
               </li>
             </ul>
           </div>

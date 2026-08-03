@@ -15,6 +15,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://bakasurabiryani.com"),
   title: "Bakasura Biryani | Eat Like a King",
   description:
     "Royal dum-cooked biryani, slow-cooked with secret spices fit for a king. Once you start, you can't stop. Order Bakasura Biryani today.",

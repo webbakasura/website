@@ -6,6 +6,7 @@ import Hero from "./Hero";
 import Categories from "./Categories";
 import Story from "./Story";
 import Menu from "./Menu";
+import Offers from "./Offers";
 import WhyUs from "./WhyUs";
 import HoursBanner from "./HoursBanner";
 import Reviews from "./Reviews";
@@ -20,6 +21,7 @@ export default function Home() {
       <Categories />
       <Story />
       <Menu />
+      <Offers />
       <WhyUs />
       <HoursBanner />
       <Reviews />

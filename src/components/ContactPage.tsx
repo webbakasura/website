@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, MapPin, Phone, Clock, Navigation } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, Clock, Navigation, Bike, Timer } from "lucide-react";
 import AnimatedBackground from "./AnimatedBackground";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import { InstagramIcon, FacebookIcon, WhatsAppIcon } from "./icons";
 
 const ADDRESS =
-  "2-6-1533, NGO's Colony Road, Opp: Thirumala Bar, Gokul Nagar Junction, Hanamkonda - 506001";
+  "2-6-1533, NGO's Colony Road, Opp: Thirumala Bar, Gokul Nagar Junction, Hanumakonda - 506001";
 const PHONE_DISPLAY = "+91 73309 22131";
 const PHONE_TEL = "+917330922131";
 const PHONE_WA = "917330922131";
@@ -37,7 +37,19 @@ const CARDS = [
   {
     icon: Clock,
     title: "Hours",
-    lines: ["11:00 AM – 11:00 PM", "Open all 7 days"],
+    lines: ["12:00 PM – 3:00 PM", "6:00 PM – 9:00 PM, Daily"],
+    action: null,
+  },
+  {
+    icon: Bike,
+    title: "Home Delivery",
+    lines: ["Minimum 5 orders", "for home delivery"],
+    action: null,
+  },
+  {
+    icon: Timer,
+    title: "Bulk Orders",
+    lines: ["Please place your order", "at least 3 hours in advance"],
     action: null,
   },
 ];
@@ -84,7 +96,7 @@ export default function ContactPage() {
         </p>
       </motion.div>
 
-      <div className="relative z-10 mt-12 grid w-full max-w-3xl grid-cols-1 gap-5 sm:grid-cols-2">
+      <div className="relative z-10 mt-12 grid w-full max-w-5xl grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {CARDS.map((card, i) => (
           <motion.div
             key={card.title}

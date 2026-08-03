@@ -25,7 +25,7 @@ export default function HoursBanner() {
             <p className="font-display text-sm font-bold uppercase tracking-wide text-white">
               Open Daily
             </p>
-            <p className="text-sm text-white/70">11:00 AM – 11:00 PM</p>
+            <p className="text-sm text-white/70">12:00 PM – 3:00 PM &amp; 6:00 PM – 9:00 PM</p>
           </div>
         </div>
 
@@ -46,7 +46,7 @@ export default function HoursBanner() {
           </a>
           <p className="flex items-center gap-2 text-sm text-white/70">
             <MapPin size={14} className="shrink-0 text-gold" />
-            Hanamkonda, Telangana
+            Hanumakonda, Telangana
           </p>
         </div>
       </motion.div>
