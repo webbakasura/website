@@ -5,9 +5,9 @@ import { motion } from "framer-motion";
 import { ChevronDown, Flame, Crown, Leaf, Sparkles } from "lucide-react";
 
 const BADGES = [
-  { icon: Flame, label: "Dum Cooked Fresh" },
-  { icon: Crown, label: "Secret Family Recipe" },
-  { icon: Leaf, label: "100% Home Made" },
+  { icon: Flame, label: "Dum Cooked Fresh", color: "text-terracotta" },
+  { icon: Crown, label: "Secret Family Recipe", color: "text-gold-deep" },
+  { icon: Leaf, label: "100% Home Made", color: "text-emerald" },
 ];
 
 const FLOATING_CARDS = [
@@ -16,18 +16,24 @@ const FLOATING_CARDS = [
     title: "Dum Cooked Fresh",
     subtitle: "Slow-cooked to perfection",
     className: "left-0 top-6 sm:-left-4 sm:top-10",
+    iconBg: "bg-terracotta/15 ring-terracotta/30",
+    iconColor: "text-terracotta",
   },
   {
     icon: Crown,
     title: "Secret Recipe",
     subtitle: "Guarded family spice blend",
     className: "right-0 top-1/2 -translate-y-1/2 sm:-right-8",
+    iconBg: "bg-gold/15 ring-gold-deep/25",
+    iconColor: "text-gold-deep",
   },
   {
     icon: Leaf,
     title: "100% Home Made",
     subtitle: "Fresh, never frozen",
     className: "bottom-4 left-4 sm:-bottom-2 sm:left-8",
+    iconBg: "bg-emerald/15 ring-emerald/30",
+    iconColor: "text-emerald",
   },
 ];
 
@@ -108,7 +114,7 @@ export default function Hero() {
           >
             {BADGES.map((b) => (
               <div key={b.label} className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-cocoa/70">
-                <b.icon size={14} className="text-gold-deep" />
+                <b.icon size={14} className={b.color} />
                 {b.label}
               </div>
             ))}
@@ -140,8 +146,8 @@ export default function Hero() {
               transition={{ duration: 0.6, delay: 0.6 + i * 0.15, ease: "easeOut" }}
               className={`card-glass absolute hidden items-center gap-2.5 rounded-2xl px-4 py-3 shadow-lg lg:flex ${card.className}`}
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/15 ring-1 ring-gold-deep/25">
-                <card.icon size={16} className="text-gold-deep" />
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ring-1 ${card.iconBg}`}>
+                <card.icon size={16} className={card.iconColor} />
               </span>
               <span className="text-left">
                 <span className="block text-xs font-bold text-ink">{card.title}</span>

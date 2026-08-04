@@ -19,38 +19,51 @@ const CARDS = [
   {
     icon: MapPin,
     title: "Visit Us",
+    subtitle: "Prop: Kanna Vijaya Laxmi",
     lines: [ADDRESS],
     action: { label: "Get Directions", href: MAPS_URL, external: true, icon: Navigation },
+    iconBg: "bg-maroon-bright/10 ring-maroon-bright/30",
+    iconColor: "text-maroon-bright",
   },
   {
     icon: Phone,
     title: "Call Us",
     lines: [PHONE_DISPLAY],
     action: { label: "Call Now", href: `tel:${PHONE_TEL}`, external: false, icon: Phone },
+    iconBg: "bg-teal/10 ring-teal/30",
+    iconColor: "text-teal",
   },
   {
     icon: WhatsAppIcon,
     title: "WhatsApp",
     lines: [PHONE_DISPLAY],
     action: { label: "Message Us", href: `https://wa.me/${PHONE_WA}`, external: true, icon: WhatsAppIcon },
+    iconBg: "bg-[#25D366]/10 ring-[#25D366]/30",
+    iconColor: "text-[#25D366]",
   },
   {
     icon: Clock,
     title: "Hours",
     lines: ["12:00 PM – 3:00 PM", "6:00 PM – 9:00 PM, Daily"],
     action: null,
+    iconBg: "bg-gold/10 ring-gold-deep/25",
+    iconColor: "text-gold-deep",
   },
   {
     icon: Bike,
     title: "Home Delivery",
     lines: ["Minimum 5 orders", "for home delivery"],
     action: null,
+    iconBg: "bg-terracotta/15 ring-terracotta/30",
+    iconColor: "text-terracotta",
   },
   {
     icon: Timer,
     title: "Bulk Orders",
     lines: ["Please place your order", "at least 3 hours in advance"],
     action: null,
+    iconBg: "bg-emerald/15 ring-emerald/30",
+    iconColor: "text-emerald",
   },
 ];
 
@@ -105,11 +118,14 @@ export default function ContactPage() {
             transition={{ duration: 0.6, delay: 0.2 + i * 0.1, ease: "easeOut" }}
             className="card-glass flex flex-col items-center gap-3 rounded-2xl px-6 py-8 text-center"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold/10 ring-1 ring-gold-deep/25">
-              <card.icon size={20} className="text-gold-deep" />
+            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ring-1 ${card.iconBg}`}>
+              <card.icon size={20} className={card.iconColor} />
             </div>
             <p className="font-display text-base font-bold text-ink">{card.title}</p>
             <div className="text-sm leading-relaxed text-cocoa/75">
+              {card.subtitle && (
+                <p className="mb-1 font-semibold text-gold-deep">{card.subtitle}</p>
+              )}
               {card.lines.map((line) => (
                 <p key={line}>{line}</p>
               ))}
@@ -140,7 +156,7 @@ export default function ContactPage() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="WhatsApp"
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-gold-deep/30 text-gold-deep/90 transition hover:border-gold-deep hover:bg-gold/10 hover:text-gold-deep"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-[#25D366]/30 text-[#25D366] transition hover:border-[#25D366] hover:bg-[#25D366]/10"
         >
           <WhatsAppIcon width={18} height={18} />
         </a>
@@ -149,7 +165,7 @@ export default function ContactPage() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Instagram"
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-gold-deep/30 text-gold-deep/90 transition hover:border-gold-deep hover:bg-gold/10 hover:text-gold-deep"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-[#E1306C]/30 text-[#E1306C] transition hover:border-[#E1306C] hover:bg-[#E1306C]/10"
         >
           <InstagramIcon width={18} height={18} />
         </a>
@@ -158,7 +174,7 @@ export default function ContactPage() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Facebook"
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-gold-deep/30 text-gold-deep/90 transition hover:border-gold-deep hover:bg-gold/10 hover:text-gold-deep"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-[#1877F2]/30 text-[#1877F2] transition hover:border-[#1877F2] hover:bg-[#1877F2]/10"
         >
           <FacebookIcon width={18} height={18} />
         </a>

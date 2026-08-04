@@ -5,9 +5,24 @@ import { motion } from "framer-motion";
 import { Crown, Flame, Leaf, Sparkles } from "lucide-react";
 
 const POINTS = [
-  { icon: Flame, text: "Sealed handi, slow dum-cooked over an open flame" },
-  { icon: Crown, text: "Secret family spice blend, guarded for generations" },
-  { icon: Leaf, text: "Fresh meat, herbs, and basmati sourced daily" },
+  {
+    icon: Flame,
+    text: "Sealed handi, slow dum-cooked over an open flame",
+    iconBg: "bg-terracotta/15 ring-terracotta/30",
+    iconColor: "text-terracotta",
+  },
+  {
+    icon: Crown,
+    text: "Secret family spice blend, guarded for generations",
+    iconBg: "bg-gold/10 ring-gold-deep/25",
+    iconColor: "text-gold-deep",
+  },
+  {
+    icon: Leaf,
+    text: "Fresh meat, herbs, and basmati sourced daily",
+    iconBg: "bg-emerald/15 ring-emerald/30",
+    iconColor: "text-emerald",
+  },
 ];
 
 export default function Story() {
@@ -64,8 +79,8 @@ export default function Story() {
           <ul className="mt-7 flex flex-col gap-3">
             {POINTS.map((p) => (
               <li key={p.text} className="flex items-center justify-center gap-3 text-sm text-cocoa/85 lg:justify-start">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold/10 ring-1 ring-gold-deep/25">
-                  <p.icon size={14} className="text-gold-deep" />
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1 ${p.iconBg}`}>
+                  <p.icon size={14} className={p.iconColor} />
                 </span>
                 {p.text}
               </li>

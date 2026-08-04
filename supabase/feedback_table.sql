@@ -18,7 +18,15 @@ create table if not exists public.feedback (
   overall_rating text not null check (overall_rating in ('Poor','Fair','Good','Excellent','N/A'))
 );
 
--- Row Level Security is enabled with NO policies, so the public/anon key
--- gets zero access (no read, no write). Only the service_role key used by
--- our /api/feedback route (server-side only) can read or write this table.
+-- Row Level Security is enabled with an INSERT-only policy for the anon
+-- key (used server-side by our /api/feedback route, never shipped to the
+-- browser). There is no SELECT/UPDATE/DELETE policy, so nobody using the
+-- anon key can read, edit, or delete existing rows — only add new ones.
 alter table public.feedback enable row level security;
+
+drop policy if exists "Public can insert feedback" on public.feedback;
+create policy "Public can insert feedback"
+  on public.feedback
+  for insert
+  to anon
+  with check (true);

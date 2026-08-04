@@ -13,9 +13,9 @@ const QUICK_LINKS = [
 ];
 
 const SOCIALS = [
-  { Icon: WhatsAppIcon, href: "https://wa.me/917330922131", label: "WhatsApp" },
-  { Icon: InstagramIcon, href: "https://www.instagram.com/bakasurabiryani/", label: "Instagram" },
-  { Icon: FacebookIcon, href: "https://www.facebook.com/bakasurabiryani", label: "Facebook" },
+  { Icon: WhatsAppIcon, href: "https://wa.me/917330922131", label: "WhatsApp", color: "#25D366" },
+  { Icon: InstagramIcon, href: "https://www.instagram.com/bakasurabiryani/", label: "Instagram", color: "#E1306C" },
+  { Icon: FacebookIcon, href: "https://www.facebook.com/bakasurabiryani", label: "Facebook", color: "#1877F2" },
 ];
 
 export default function Footer() {
@@ -49,14 +49,15 @@ export default function Footer() {
               start, you can&apos;t stop.
             </p>
             <div className="mt-5 flex gap-2.5">
-              {SOCIALS.map(({ Icon, href, label }) => (
+              {SOCIALS.map(({ Icon, href, label, color }) => (
                 <a
                   key={label}
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-gold-deep/25 text-gold-deep/85 transition hover:border-gold-deep hover:bg-gold/10 hover:text-gold-deep"
+                  style={{ color, borderColor: `${color}4D` }}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border transition hover:opacity-80"
                 >
                   <Icon width={15} height={15} />
                 </a>
@@ -86,9 +87,12 @@ export default function Footer() {
             <p className="font-display text-xs font-bold uppercase tracking-widest text-ink">
               Visit Us
             </p>
-            <ul className="mt-4 space-y-3 text-sm text-cocoa/75">
+            <p className="mt-3 text-sm font-semibold text-gold-deep">
+              Prop: Kanna Vijaya Laxmi
+            </p>
+            <ul className="mt-2 space-y-3 text-sm text-cocoa/75">
               <li className="flex items-start gap-2">
-                <MapPin size={15} className="mt-0.5 shrink-0 text-gold-deep" />
+                <MapPin size={15} className="mt-0.5 shrink-0 text-maroon-bright" />
                 <span>
                   2-6-1533, NGO&apos;s Colony Road, Opp: Thirumala Bar, Gokul Nagar
                   Junction, Hanumakonda - 506001
@@ -97,9 +101,9 @@ export default function Footer() {
               <li>
                 <a
                   href="tel:+917330922131"
-                  className="flex items-center gap-2 transition hover:text-gold-deep"
+                  className="flex items-center gap-2 transition hover:text-teal"
                 >
-                  <Phone size={15} className="shrink-0 text-gold-deep" />
+                  <Phone size={15} className="shrink-0 text-teal" />
                   +91 73309 22131
                 </a>
               </li>

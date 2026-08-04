@@ -8,21 +8,29 @@ const FEATURES = [
     icon: Flame,
     title: "Dum Cooked to Perfection",
     desc: "Sealed handi, slow-cooked over an open flame until every grain is infused with flavor.",
+    iconBg: "bg-orange-400/15 ring-orange-400/30",
+    iconColor: "text-orange-400",
   },
   {
     icon: Crown,
     title: "Royal Family Recipe",
     desc: "A secret spice blend passed down through generations — never written down, never compromised.",
+    iconBg: "bg-gold/15 ring-gold/30",
+    iconColor: "text-gold-bright",
   },
   {
     icon: Leaf,
     title: "Farm-Fresh Ingredients",
     desc: "Meat, herbs, and basmati sourced fresh daily. Nothing frozen, nothing left to sit.",
+    iconBg: "bg-green-400/15 ring-green-400/30",
+    iconColor: "text-green-400",
   },
   {
     icon: MessageCircleHeart,
     title: "Made With Care",
     desc: "Every order is home-made in small batches — not mass-produced in a commercial line.",
+    iconBg: "bg-pink-400/15 ring-pink-400/30",
+    iconColor: "text-pink-400",
   },
 ];
 
@@ -53,8 +61,8 @@ export default function WhyUs() {
               transition={{ duration: 0.55, delay: i * 0.1, ease: "easeOut" }}
               className="card-glass-dark rounded-2xl p-6 text-center"
             >
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gold/15 ring-1 ring-gold/30">
-                <f.icon size={20} className="text-gold" />
+              <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-xl ring-1 ${f.iconBg}`}>
+                <f.icon size={20} className={f.iconColor} />
               </div>
               <h3 className="mt-4 font-display text-sm font-bold text-white sm:text-base">
                 {f.title}

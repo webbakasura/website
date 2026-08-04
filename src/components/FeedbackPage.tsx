@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 import AnimatedBackground from "./AnimatedBackground";
 import Navbar from "./Navbar";
 import FeedbackForm from "./FeedbackForm";
@@ -40,15 +40,20 @@ export default function FeedbackPage() {
         transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
         className="relative z-10 mt-6"
       >
-        <div className="absolute inset-0 -z-10 animate-glow-pulse rounded-full bg-gold/25 blur-[70px]" />
-        <Image
-          src="/images/logo-transparent-v2.png"
-          alt="Bakasura Biryani"
-          width={200}
-          height={200}
-          priority
-          className="w-24 drop-shadow-[0_15px_30px_rgba(42,22,8,0.2)] sm:w-28"
-        />
+        <div className="absolute inset-0 -z-10 animate-glow-pulse rounded-full bg-gold/25 blur-2xl" />
+        <div className="relative h-24 w-24 overflow-hidden rounded-full shadow-[0_15px_35px_rgba(42,22,8,0.25)] ring-4 ring-paper sm:h-28 sm:w-28">
+          <Image
+            src="/images/chicken-biryani.jpg"
+            alt="Bakasura Biryani"
+            fill
+            sizes="112px"
+            className="object-cover"
+            priority
+          />
+        </div>
+        <span className="absolute -bottom-1.5 -right-1.5 flex h-9 w-9 items-center justify-center rounded-full bg-gold-deep text-white shadow-lg ring-4 ring-paper">
+          <Star size={16} className="fill-white" />
+        </span>
       </motion.div>
 
       <motion.div
@@ -64,7 +69,8 @@ export default function FeedbackPage() {
           Share Your <span className="text-gold-gradient">Experience</span>
         </h1>
         <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-cocoa/75 sm:text-base">
-          A quick review helps us keep every plate fit for a king.
+          A quick review helps us keep every plate fit for a king. It only
+          takes about a minute.
         </p>
       </motion.div>
 

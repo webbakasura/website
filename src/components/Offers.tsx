@@ -4,10 +4,10 @@ import { motion } from "framer-motion";
 import { CalendarDays, Gift, GraduationCap, Building2, HeartHandshake, Boxes } from "lucide-react";
 
 const DISCOUNTS = [
-  { icon: GraduationCap, label: "Students" },
-  { icon: Building2, label: "Hostel Students" },
-  { icon: HeartHandshake, label: "Couples" },
-  { icon: Boxes, label: "10+ Orders" },
+  { icon: GraduationCap, label: "Students", iconBg: "bg-gold/10 ring-gold-deep/25", iconColor: "text-gold-deep" },
+  { icon: Building2, label: "Hostel Students", iconBg: "bg-terracotta/15 ring-terracotta/30", iconColor: "text-terracotta" },
+  { icon: HeartHandshake, label: "Couples", iconBg: "bg-maroon-bright/10 ring-maroon-bright/30", iconColor: "text-maroon-bright" },
+  { icon: Boxes, label: "10+ Orders", iconBg: "bg-emerald/15 ring-emerald/30", iconColor: "text-emerald" },
 ];
 
 export default function Offers() {
@@ -71,8 +71,8 @@ export default function Offers() {
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
             {DISCOUNTS.map((d) => (
               <div key={d.label} className="flex flex-col items-center gap-2 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 ring-1 ring-gold-deep/25">
-                  <d.icon size={20} className="text-gold-deep" />
+                <span className={`flex h-12 w-12 items-center justify-center rounded-full ring-1 ${d.iconBg}`}>
+                  <d.icon size={20} className={d.iconColor} />
                 </span>
                 <span className="font-display text-xl font-bold text-gold-gradient">10% Off</span>
                 <span className="text-xs font-semibold text-cocoa/70">{d.label}</span>

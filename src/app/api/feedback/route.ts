@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getSupabaseServer } from "@/lib/supabaseServer";
 
 const RATING_OPTIONS = ["Poor", "Fair", "Good", "Excellent", "N/A"] as const;
 type RatingValue = (typeof RATING_OPTIONS)[number];
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = getSupabaseServer();
     const { error } = await supabase.from("feedback").insert(insertRow);
 
     if (error) {
