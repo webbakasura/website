@@ -26,11 +26,6 @@ const OPTION_STYLE: Record<RatingValue, { icon: typeof Frown; active: string; id
     active: "border-emerald bg-emerald text-white shadow-[0_4px_14px_rgba(31,74,48,0.35)]",
     idle: "border-emerald/25 bg-white/50 text-cocoa/70 hover:border-emerald/50 hover:text-emerald",
   },
-  "N/A": {
-    icon: MinusCircle,
-    active: "border-cocoa bg-cocoa text-white shadow-[0_4px_14px_rgba(107,74,53,0.3)]",
-    idle: "border-cocoa/25 bg-white/50 text-cocoa/60 hover:border-cocoa/50 hover:text-cocoa",
-  },
 };
 
 export default function RatingSelect({
