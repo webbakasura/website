@@ -2,7 +2,7 @@
 
 import { Frown, Meh, Smile, PartyPopper, MinusCircle } from "lucide-react";
 
-export const RATING_OPTIONS = ["Poor", "Fair", "Good", "Excellent", "N/A"] as const;
+export const RATING_OPTIONS = ["Poor", "Fair", "Good", "Excellent"] as const;
 export type RatingValue = (typeof RATING_OPTIONS)[number];
 
 const OPTION_STYLE: Record<RatingValue, { icon: typeof Frown; active: string; idle: string }> = {

@@ -19,16 +19,6 @@ type Review = {
   created_at: string;
 };
 
-/*
- * Decorative food images
- *
- * Review 1 -> 1.png
- * Review 2 -> 2.png
- * Review 3 -> 3.png
- * Review 4 -> 4.png
- * Review 5 -> 5.png
- * Review 6 -> 1.png again
- */
 const REVIEW_IMAGES = [
   "/images/reviews/1.png",
   "/images/reviews/2.png",
@@ -63,6 +53,7 @@ function getInitial(name: string) {
 export default function Reviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -89,10 +80,7 @@ export default function Reviews() {
 
         setReviews(data.reviews ?? []);
       } catch (error) {
-        console.error(
-            "Failed to load reviews:",
-            error
-        );
+        console.error("Failed to load reviews:", error);
       } finally {
         setLoading(false);
       }
@@ -102,23 +90,94 @@ export default function Reviews() {
   }, []);
 
   /*
-   * Horizontal carousel
+   * Manual carousel
    */
   function scroll(direction: "left" | "right") {
     const container = scrollRef.current;
 
     if (!container) return;
 
-    const amount = container.clientWidth * 0.8;
+    const firstCard =
+        container.querySelector<HTMLElement>(
+            "[data-review-card]"
+        );
+
+    if (!firstCard) return;
+
+    const cardWidth = firstCard.offsetWidth;
+
+    const styles = window.getComputedStyle(container);
+
+    const gap =
+        parseFloat(styles.columnGap || styles.gap) || 20;
+
+    const amount = cardWidth + gap;
 
     container.scrollBy({
-      left:
-          direction === "right"
-              ? amount
-              : -amount,
+      left: direction === "right" ? amount : -amount,
       behavior: "smooth",
     });
   }
+
+  /*
+   * Auto carousel
+   *
+   * Only runs when there are more than 3 reviews.
+   */
+  useEffect(() => {
+    if (reviews.length <= 3 || isHovered) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      const container = scrollRef.current;
+
+      if (!container) return;
+
+      const firstCard =
+          container.querySelector<HTMLElement>(
+              "[data-review-card]"
+          );
+
+      if (!firstCard) return;
+
+      const styles = window.getComputedStyle(container);
+
+      const gap =
+          parseFloat(styles.columnGap || styles.gap) || 20;
+
+      const cardWidth = firstCard.offsetWidth;
+
+      const amount = cardWidth + gap;
+
+      const maxScroll =
+          container.scrollWidth -
+          container.clientWidth;
+
+      /*
+       * If we're near the end,
+       * smoothly return to the beginning.
+       */
+      if (
+          container.scrollLeft >=
+          maxScroll - amount / 2
+      ) {
+        container.scrollTo({
+          left: 0,
+          behavior: "smooth",
+        });
+      } else {
+        container.scrollBy({
+          left: amount,
+          behavior: "smooth",
+        });
+      }
+    }, 4000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [reviews.length, isHovered]);
 
   return (
       <section className="relative z-10 overflow-hidden px-5 py-16 sm:py-20">
@@ -176,14 +235,21 @@ export default function Reviews() {
           ) : reviews.length > 0 ? (
 
               /* ================================
-                  REVIEWS CAROUSEL
+                  REVIEWS
               ================================= */
 
-              <div className="relative mt-10">
+              <div
+                  className="relative mt-10"
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+              >
 
-                {/* LEFT BUTTON */}
+                {/* ================================
+                LEFT BUTTON
+                Only 4+ reviews
+            ================================= */}
 
-                {reviews.length > 1 && (
+                {reviews.length > 3 && (
                     <button
                         type="button"
                         onClick={() => scroll("left")}
@@ -218,12 +284,12 @@ export default function Reviews() {
                 )}
 
                 {/* ================================
-                REVIEWS
+                CAROUSEL CONTAINER
             ================================= */}
 
                 <div
                     ref={scrollRef}
-                    className="
+                    className={`
                 flex
                 snap-x
                 snap-mandatory
@@ -233,11 +299,16 @@ export default function Reviews() {
                 pb-5
                 [scrollbar-width:none]
                 [&::-webkit-scrollbar]:hidden
-              "
+
+                ${
+                        reviews.length <= 2
+                            ? "lg:justify-center"
+                            : ""
+                    }
+              `}
                 >
 
                   {reviews.map((review, index) => {
-
                     const starCount =
                         getStarCount(
                             review.overall_rating
@@ -249,6 +320,29 @@ export default function Reviews() {
                         REVIEW_IMAGES.length
                             ];
 
+                    /*
+                     * Adaptive card sizing
+                     *
+                     * 1 review = centered 420px
+                     * 2 reviews = 2 equal cards
+                     * 3+ reviews = exactly 3 cards
+                     */
+                    const cardWidth =
+                        reviews.length === 1
+                            ? `
+                      lg:min-w-[420px]
+                      lg:max-w-[420px]
+                    `
+                            : reviews.length === 2
+                                ? `
+                        lg:min-w-[calc(50%-0.625rem)]
+                        lg:max-w-[calc(50%-0.625rem)]
+                      `
+                                : `
+                        lg:min-w-[calc((100%-2.5rem)/3)]
+                        lg:max-w-[calc((100%-2.5rem)/3)]
+                      `;
+
                     return (
 
                         /* ================================
@@ -256,6 +350,7 @@ export default function Reviews() {
                         ================================= */
 
                         <motion.article
+                            data-review-card
                             key={review.id}
                             initial={{
                               opacity: 0,
@@ -276,7 +371,7 @@ export default function Reviews() {
                                   0.25
                               ),
                             }}
-                            className="
+                            className={`
                       group
                       relative
                       flex
@@ -301,13 +396,15 @@ export default function Reviews() {
                       hover:-translate-y-1
                       hover:border-gold-deep/20
                       hover:shadow-[0_20px_55px_rgba(67,44,18,0.11)]
+
                       sm:min-w-[420px]
-                      lg:min-w-[calc((100%-2.5rem)/3)]
-                    "
+
+                      ${cardWidth}
+                    `}
                         >
 
                           {/* ================================
-                        DECORATIVE WARM GLOW
+                        WARM GLOW
                     ================================= */}
 
                           <div
@@ -326,7 +423,6 @@ export default function Reviews() {
 
                           {/* ================================
                         FOOD IMAGE
-                        Bottom-right corner
                     ================================= */}
 
                           <div
@@ -343,8 +439,6 @@ export default function Reviews() {
                       "
                           >
 
-                            {/* Very subtle glow */}
-
                             <div
                                 className="
                           absolute
@@ -357,8 +451,6 @@ export default function Reviews() {
                           blur-3xl
                         "
                             />
-
-                            {/* FOOD */}
 
                             <img
                                 src={foodImage}
@@ -390,9 +482,7 @@ export default function Reviews() {
 
                           <div className="relative z-10 flex h-full flex-1 flex-col">
 
-                            {/* ================================
-                          AVATAR + QUOTE
-                      ================================= */}
+                            {/* Avatar + Quote */}
 
                             <div className="flex items-start justify-between">
 
@@ -413,7 +503,9 @@ export default function Reviews() {
                           "
                               >
                           <span className="font-display text-lg font-bold text-gold-deep">
-                            {getInitial(review.name)}
+                            {getInitial(
+                                review.name
+                            )}
                           </span>
                               </div>
 
@@ -426,35 +518,26 @@ export default function Reviews() {
                             </div>
 
                             {/* ================================
-                          REVIEW MESSAGE
+                          COMMENT
                       ================================= */}
 
                             <div className="mt-6 flex-1 pr-2">
 
                               <p className="line-clamp-4 text-sm font-medium leading-7 text-cocoa/85">
-
                                 {review.message
                                     ? `“${review.message}”`
                                     : "Thank you for sharing your experience with us."}
-
                               </p>
 
                             </div>
 
                             {/* ================================
-                          CUSTOMER DETAILS
+                          CUSTOMER
                       ================================= */}
 
                             <div className="relative mt-6 border-t border-gold-deep/10 pt-5">
 
-                              {/*
-                          Keep content away from
-                          the food image.
-                        */}
-
                               <div className="max-w-[64%]">
-
-                                {/* NAME */}
 
                                 <p className="font-display text-base font-bold text-ink">
                                   {review.name}
@@ -464,9 +547,7 @@ export default function Reviews() {
                                   Customer Review
                                 </p>
 
-                                {/* ================================
-                              STARS
-                          ================================= */}
+                                {/* Stars */}
 
                                 <div className="mt-4 flex items-center gap-0.5">
 
@@ -489,8 +570,6 @@ export default function Reviews() {
 
                                 </div>
 
-                                {/* RATING */}
-
                                 <p className="mt-2 text-sm font-bold text-gold-deep">
                                   {review.overall_rating}
                                 </p>
@@ -509,9 +588,10 @@ export default function Reviews() {
 
                 {/* ================================
                 RIGHT BUTTON
+                Only 4+ reviews
             ================================= */}
 
-                {reviews.length > 1 && (
+                {reviews.length > 3 && (
                     <button
                         type="button"
                         onClick={() => scroll("right")}
@@ -545,7 +625,9 @@ export default function Reviews() {
                     </button>
                 )}
 
-                {/* MOBILE SWIPE HINT */}
+                {/* ================================
+                MOBILE SWIPE HINT
+            ================================= */}
 
                 {reviews.length > 1 && (
                     <p className="mt-1 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-cocoa/35 lg:hidden">
@@ -616,7 +698,7 @@ export default function Reviews() {
           )}
 
           {/* ================================
-            LEAVE REVIEW BUTTON
+            CTA
         ================================= */}
 
           <div className="mt-8 text-center">
