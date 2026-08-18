@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CalendarDays, Gift, GraduationCap, Building2, HeartHandshake, Boxes } from "lucide-react";
+import { Flame, Utensils, GraduationCap, Building2, HeartHandshake, Boxes } from "lucide-react";
 
 const DISCOUNTS = [
   { icon: GraduationCap, label: "Students", iconBg: "bg-gold/10 ring-gold-deep/25", iconColor: "text-gold-deep" },
@@ -16,10 +16,10 @@ export default function Offers() {
       <div className="mx-auto max-w-5xl">
         <div className="mx-auto max-w-xl text-center">
           <div className="divider-ornament mb-3 text-xs font-semibold tracking-[0.4em] text-gold-deep">
-            GRAND OPENING · AUGUST 9TH, 2026
+            SPECIAL OFFERS
           </div>
           <h2 className="font-display text-2xl font-bold uppercase text-ink sm:text-3xl">
-            Opening <span className="text-gold-gradient">Offers</span>
+            Feast <span className="text-gold-gradient">Offers</span>
           </h2>
         </div>
 
@@ -47,16 +47,16 @@ export default function Offers() {
             transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
             className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-gradient-to-br from-maroon-bright to-[#5c1620] px-8 py-10 text-center text-white shadow-[0_10px_30px_rgba(122,31,43,0.25)]"
           >
-            <Gift size={22} className="text-gold" />
+            <Flame size={22} className="text-gold" />
             <span className="font-display text-lg font-bold uppercase sm:text-xl">
-              Opening Day Offer
+              Dum Cooked Fresh
             </span>
             <span className="text-2xl font-bold text-gold-bright sm:text-3xl">
-              Buy 3, Get 1 Free
+              Every Single Order
             </span>
             <span className="flex items-center gap-1.5 text-xs text-white/70">
-              <CalendarDays size={13} />
-              Opening day only — August 9th, 2026
+              <Utensils size={13} />
+              Sealed handi, slow-cooked to perfection
             </span>
           </motion.div>
         </div>
