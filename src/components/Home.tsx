@@ -9,6 +9,7 @@ import Story from "./Story";
 import Team from "./Team";
 import Menu from "./Menu";
 import Offers from "./Offers";
+import BulkOrders from "./BulkOrders";
 import WhyUs from "./WhyUs";
 import HoursBanner from "./HoursBanner";
 import Reviews from "./Reviews";
@@ -27,6 +28,7 @@ export default function Home() {
       <Team />
       <Menu />
       <Offers />
+      <BulkOrders />
       <WhyUs />
       <HoursBanner />
       <Reviews />

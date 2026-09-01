@@ -60,8 +60,15 @@ const CARDS = [
   {
     icon: Timer,
     title: "Bulk Orders",
-    lines: ["Please place your order", "at least 3 hours in advance"],
-    action: null,
+    lines: ["10% off on 10+ orders.", "Please book at least 3 hours ahead"],
+    action: {
+      label: "Enquire Now",
+      href: `https://wa.me/${PHONE_WA}?text=${encodeURIComponent(
+        "Hi, I'd like to place a bulk/party order for Bakasura Biryani. Could you share details?"
+      )}`,
+      external: true,
+      icon: WhatsAppIcon,
+    },
     iconBg: "bg-emerald/15 ring-emerald/30",
     iconColor: "text-emerald",
   },
