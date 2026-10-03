@@ -14,7 +14,7 @@ const LINKS = [
   { label: "Feedback", href: "/feedback" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ showLinks = true }: { showLinks?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -50,30 +50,34 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="hidden items-center gap-8 md:flex">
-          {LINKS.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className={`text-sm font-medium transition hover:text-gold-deep ${
-                pathname === link.href ? "text-gold-deep" : "text-cocoa/80"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
+        {showLinks && (
+          <div className="hidden items-center gap-8 md:flex">
+            {LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={`text-sm font-medium transition hover:text-gold-deep ${
+                  pathname === link.href ? "text-gold-deep" : "text-cocoa/80"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        )}
 
-        <button
-          aria-label="Toggle menu"
-          onClick={() => setOpen((v) => !v)}
-          className="text-gold-deep md:hidden"
-        >
-          {open ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {showLinks && (
+          <button
+            aria-label="Toggle menu"
+            onClick={() => setOpen((v) => !v)}
+            className="text-gold-deep md:hidden"
+          >
+            {open ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        )}
       </nav>
 
-      {open && (
+      {showLinks && open && (
         <div className="border-t border-gold-deep/15 bg-paper/95 backdrop-blur-md md:hidden">
           <div className="flex flex-col gap-1 px-5 py-4">
             {LINKS.map((link) => (

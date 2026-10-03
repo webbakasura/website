@@ -27,13 +27,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "A customer and redemption amount are required." }, { status: 400 });
   }
 
+  const bareMobile = customerMobile.length === 12 && customerMobile.startsWith("91") ? customerMobile.slice(2) : customerMobile;
   const supabase = getSupabaseServer();
 
   const { data: customer } = await supabase
     .from("customers")
-    .select("referral_balance")
-    .eq("mobile", customerMobile)
-    .maybeSingle<Pick<Customer, "referral_balance">>();
+    .select("mobile, referral_balance")
+    .or(`mobile.eq.${customerMobile},mobile.eq.${bareMobile}`)
+    .maybeSingle<Pick<Customer, "mobile" | "referral_balance">>();
 
   if (!customer) {
     return NextResponse.json({ error: "No customer found with that mobile number." }, { status: 404 });
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { error: redemptionError } = await supabase.from("redemptions").insert({
-    customer_mobile: customerMobile,
+    customer_mobile: customer.mobile,
     amount,
     notes,
   });
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
   const { error: updateError } = await supabase
     .from("customers")
     .update({ referral_balance: newBalance })
-    .eq("mobile", customerMobile);
+    .eq("mobile", customer.mobile);
   if (updateError) {
     return NextResponse.json({ error: "Redemption recorded, but balance could not be updated." }, { status: 500 });
   }

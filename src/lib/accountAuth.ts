@@ -77,10 +77,13 @@ export async function verifyAccountAccess(req: NextRequest): Promise<AccountAcce
     };
   }
 
+  // Also match the bare 10-digit form, in case this row predates mobile
+  // number normalization (e.g. migrated from the old customer_dates table).
+  const bareMobile = mobile.length === 12 && mobile.startsWith("91") ? mobile.slice(2) : mobile;
   const { data: customer } = await supabase
     .from("customers")
     .select("*")
-    .eq("mobile", mobile)
+    .or(`mobile.eq.${mobile},mobile.eq.${bareMobile}`)
     .maybeSingle<Customer>();
 
   const valid = !!customer?.pin_hash && (await verifyPin(pin, customer.pin_hash));

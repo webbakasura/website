@@ -18,6 +18,8 @@ import {
   Wallet,
   ShoppingBag,
   Star,
+  Pencil,
+  Receipt,
 } from "lucide-react";
 import AnimatedBackground from "./AnimatedBackground";
 import Navbar from "./Navbar";
@@ -39,15 +41,33 @@ type Customer = {
   referral_balance: number;
   lifetime_referral_earned: number;
   created_at: string;
+  has_pin: boolean;
 };
 
 type Session = { mobile: string; pin: string };
+
+type Purchase = {
+  id: string;
+  created_at: string;
+  customer_mobile: string;
+  biryani_count: number;
+  amount: number;
+  referrer_mobile: string | null;
+  points_awarded: number;
+  referral_bonus: number;
+};
+
+type AdminTab = "wishes" | "purchase" | "redeem" | "form" | "customers" | "history";
 
 function normalizeMobile(raw: string): string {
   const digits = raw.replace(/\D/g, "");
   if (digits.length === 10) return `91${digits}`;
   if (digits.length === 12 && digits.startsWith("91")) return digits;
   return digits;
+}
+
+function displayMobile(mobile: string): string {
+  return mobile.length === 12 && mobile.startsWith("91") ? mobile.slice(2) : mobile;
 }
 
 function isTodayMonthDay(dateStr: string | null): boolean {
@@ -61,6 +81,10 @@ function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 function birthdayMessage(name: string) {
@@ -90,14 +114,22 @@ export default function AccountPage() {
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [loadError, setLoadError] = useState("");
 
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [loadingPurchases, setLoadingPurchases] = useState(false);
+  const [purchasesLoadError, setPurchasesLoadError] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
+
+  const [activeTab, setActiveTab] = useState<AdminTab>("customers");
+
   // Add/edit customer form
+  const [editingMobile, setEditingMobile] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", mobile: "", pin: "", dob: "", anniversary: "", notes: "", referredBy: "" });
   const [savingForm, setSavingForm] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState(false);
 
   // Record purchase form
-  const [purchase, setPurchase] = useState({ customerMobile: "", biryaniCount: "", amount: "" });
+  const [purchase, setPurchase] = useState({ customerMobile: "", biryaniCount: "", amount: "", referredBy: "" });
   const [savingPurchase, setSavingPurchase] = useState(false);
   const [purchaseError, setPurchaseError] = useState("");
   const [purchaseResult, setPurchaseResult] = useState<{ pointsAwarded: number; referralBonus: number } | null>(null);
@@ -210,6 +242,45 @@ export default function AccountPage() {
     if (session && customer?.is_admin) loadCustomers(session);
   }, [session, customer?.is_admin, loadCustomers]);
 
+  const loadPurchases = useCallback(async (s: Session) => {
+    setLoadingPurchases(true);
+    setPurchasesLoadError("");
+    try {
+      const res = await fetch("/api/account/purchases", {
+        headers: { "x-account-mobile": s.mobile, "x-account-pin": s.pin },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPurchasesLoadError(data.error || "Could not load purchase history.");
+        return;
+      }
+      setPurchases(data.purchases || []);
+    } catch {
+      setPurchasesLoadError("Network error. Please try again.");
+    } finally {
+      setLoadingPurchases(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (session && customer) loadPurchases(session);
+  }, [session, customer, loadPurchases]);
+
+  async function handleDeletePurchase(id: string) {
+    if (!session) return;
+    if (!confirm("Delete this purchase? Any points or referral bonus it granted will be reversed.")) return;
+    try {
+      await fetch(`/api/account/purchases?id=${id}`, {
+        method: "DELETE",
+        headers: { "x-account-mobile": session.mobile, "x-account-pin": session.pin },
+      });
+      loadPurchases(session);
+      loadCustomers(session);
+    } catch {
+      // no-op — list will just still show the entry, admin can retry
+    }
+  }
+
   function handleUnlock(e: React.FormEvent) {
     e.preventDefault();
     if (!mobileInput.trim() || !pinInput.trim() || (lockedUntil && nowTick < lockedUntil)) return;
@@ -243,6 +314,7 @@ export default function AccountPage() {
         return;
       }
       setForm({ name: "", mobile: "", pin: "", dob: "", anniversary: "", notes: "", referredBy: "" });
+      setEditingMobile(null);
       setFormSuccess(true);
       setTimeout(() => setFormSuccess(false), 2500);
       loadCustomers(session);
@@ -253,11 +325,27 @@ export default function AccountPage() {
     }
   }
 
-  async function handleDeleteCustomer(mobile: string) {
+  function handleEditCustomer(c: Customer) {
+    setEditingMobile(c.mobile);
+    setForm({
+      name: c.name,
+      mobile: displayMobile(c.mobile),
+      pin: "",
+      dob: c.dob || "",
+      anniversary: c.anniversary || "",
+      notes: c.notes || "",
+      referredBy: c.referred_by || "",
+    });
+    setFormError("");
+    setFormSuccess(false);
+    setActiveTab("form");
+  }
+
+  async function handleDeleteCustomer(id: string) {
     if (!session) return;
     if (!confirm("Delete this customer?")) return;
     try {
-      await fetch(`/api/account/customers?mobile=${mobile}`, {
+      await fetch(`/api/account/customers?id=${id}`, {
         method: "DELETE",
         headers: { "x-account-mobile": session.mobile, "x-account-pin": session.pin },
       });
@@ -281,6 +369,7 @@ export default function AccountPage() {
           customerMobile: purchase.customerMobile,
           biryaniCount: Number(purchase.biryaniCount),
           amount: Number(purchase.amount),
+          referredBy: purchase.referredBy,
         }),
       });
       const data = await res.json();
@@ -289,8 +378,9 @@ export default function AccountPage() {
         return;
       }
       setPurchaseResult({ pointsAwarded: data.pointsAwarded, referralBonus: data.referralBonus });
-      setPurchase({ customerMobile: "", biryaniCount: "", amount: "" });
+      setPurchase({ customerMobile: "", biryaniCount: "", amount: "", referredBy: "" });
       loadCustomers(session);
+      loadPurchases(session);
     } catch {
       setPurchaseError("Network error. Please try again.");
     } finally {
@@ -328,6 +418,11 @@ export default function AccountPage() {
 
   const todaysBirthdays = customers.filter((c) => isTodayMonthDay(c.dob));
   const todaysAnniversaries = customers.filter((c) => isTodayMonthDay(c.anniversary));
+
+  const historySearchDigits = historySearch.replace(/\D/g, "");
+  const filteredPurchases = historySearchDigits
+    ? purchases.filter((p) => p.customer_mobile.includes(historySearchDigits))
+    : purchases;
 
   // -------- Login gate --------
   if (!session || !customer) {
@@ -410,7 +505,7 @@ export default function AccountPage() {
     const redeemable = customer.referral_balance >= MIN_REDEMPTION;
     return (
       <main className="relative min-h-[100svh] overflow-hidden px-5 pb-16 pt-28">
-        <Navbar />
+        <Navbar showLinks={false} />
         <AnimatedBackground />
         <div className="relative z-10 mx-auto max-w-lg">
           <div className="flex justify-end">
@@ -447,7 +542,7 @@ export default function AccountPage() {
           <div className="card-glass mt-6 rounded-3xl px-6 py-6 text-left sm:px-8">
             <p className="font-display text-base font-bold text-ink">Your Referral Number</p>
             <p className="mt-1 text-sm text-cocoa/70">
-              Share your mobile number <span className="font-semibold text-ink">{customer.mobile}</span> with friends —
+              Share your mobile number <span className="font-semibold text-ink">{displayMobile(customer.mobile)}</span> with friends —
               when they order and mention it, you earn 10% of their bill every time they order.
             </p>
             <p className="mt-3 text-sm text-cocoa/70">
@@ -461,6 +556,37 @@ export default function AccountPage() {
               Lifetime referral earnings: {rupees(customer.lifetime_referral_earned)}
             </p>
           </div>
+
+          <div className="card-glass mt-6 rounded-3xl px-6 py-6 text-left sm:px-8">
+            <div className="flex items-center gap-2">
+              <Receipt size={17} className="text-gold-deep" />
+              <p className="font-display text-base font-bold text-ink">Your Purchase History</p>
+            </div>
+            {loadingPurchases ? (
+              <p className="mt-4 flex items-center gap-2 text-sm text-cocoa/60">
+                <Loader2 size={14} className="animate-spin" />
+                Loading...
+              </p>
+            ) : purchasesLoadError ? (
+              <p className="mt-4 text-sm text-maroon-bright">{purchasesLoadError}</p>
+            ) : purchases.length === 0 ? (
+              <p className="mt-4 text-sm text-cocoa/60">No purchases recorded yet.</p>
+            ) : (
+              <div className="mt-4 flex flex-col gap-2.5">
+                {purchases.map((p) => (
+                  <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-deep/20 bg-white/40 px-4 py-3 text-sm">
+                    <div>
+                      <p className="font-semibold text-ink">
+                        {p.biryani_count} biryani{p.biryani_count === 1 ? "" : "s"} · {rupees(p.amount)}
+                      </p>
+                      <p className="text-xs text-cocoa/50">{formatDateTime(p.created_at)}</p>
+                    </div>
+                    <span className="text-xs font-semibold text-gold-deep">+{p.points_awarded} pts</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     );
@@ -469,7 +595,7 @@ export default function AccountPage() {
   // -------- Admin dashboard --------
   return (
     <main className="relative min-h-[100svh] overflow-hidden px-5 pb-16 pt-28">
-      <Navbar />
+      <Navbar showLinks={false} />
       <AnimatedBackground />
 
       <div className="relative z-10 mx-auto max-w-4xl">
@@ -491,10 +617,38 @@ export default function AccountPage() {
           </h1>
         </div>
 
+        {/* Tab menu */}
+        <div className="mt-8 flex flex-wrap justify-center gap-2">
+          {([
+            { key: "customers", label: "All Customers", icon: Users },
+            { key: "wishes", label: "Today's Wishes", icon: Cake },
+            { key: "purchase", label: "Record Purchase", icon: ShoppingBag },
+            { key: "history", label: "Purchase History", icon: Receipt },
+            { key: "redeem", label: "Redeem", icon: Gift },
+            { key: "form", label: editingMobile ? "Edit Customer" : "Add Customer", icon: editingMobile ? Pencil : Plus },
+          ] as { key: AdminTab; label: string; icon: typeof Users }[]).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide transition ${
+                activeTab === key
+                  ? "bg-gradient-to-r from-gold-deep via-gold to-gold-bright text-ink"
+                  : "border border-gold-deep/25 text-cocoa/70 hover:border-gold-deep/50"
+              }`}
+            >
+              <Icon size={13} />
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Today's wishes */}
-        {(todaysBirthdays.length > 0 || todaysAnniversaries.length > 0) && (
-          <div className="card-glass mt-8 rounded-3xl px-6 py-6 sm:px-8">
+        {activeTab === "wishes" && (
+          <div className="card-glass mt-6 rounded-3xl px-6 py-6 sm:px-8">
             <p className="font-display text-base font-bold text-ink">Today&apos;s Wishes</p>
+            {todaysBirthdays.length === 0 && todaysAnniversaries.length === 0 && (
+              <p className="mt-4 text-sm text-cocoa/60">No birthdays or anniversaries today.</p>
+            )}
             <div className="mt-4 flex flex-col gap-3">
               {todaysBirthdays.map((c) => (
                 <div key={`b-${c.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold-deep/20 bg-white/40 px-4 py-3">
@@ -537,6 +691,7 @@ export default function AccountPage() {
         )}
 
         {/* Record a purchase */}
+        {activeTab === "purchase" && (
         <form
           onSubmit={handleRecordPurchase}
           className="card-glass mt-6 grid grid-cols-1 gap-4 rounded-3xl px-6 py-7 text-left sm:grid-cols-3 sm:px-8"
@@ -553,7 +708,7 @@ export default function AccountPage() {
               required
               value={purchase.customerMobile}
               onChange={(e) => setPurchase((p) => ({ ...p, customerMobile: e.target.value }))}
-              placeholder="10-digit mobile"
+              placeholder="10-digit mobile — added automatically if new"
               className="rounded-xl border border-gold-deep/25 bg-white/50 px-4 py-2.5 text-sm text-ink outline-none transition focus:border-gold-deep"
             />
           </div>
@@ -583,6 +738,18 @@ export default function AccountPage() {
             />
           </div>
 
+          <div className="flex flex-col gap-1.5 sm:col-span-3">
+            <label className="text-xs font-semibold uppercase tracking-wide text-cocoa/70">Referred By (mobile, optional)</label>
+            <input
+              type="tel"
+              value={purchase.referredBy}
+              onChange={(e) => setPurchase((p) => ({ ...p, referredBy: e.target.value }))}
+              placeholder="Referrer's mobile number — added automatically if new"
+              className="rounded-xl border border-gold-deep/25 bg-white/50 px-4 py-2.5 text-sm text-ink outline-none transition focus:border-gold-deep"
+            />
+            <p className="text-xs text-cocoa/50">Leave blank to keep this customer&apos;s existing referrer, if any.</p>
+          </div>
+
           {purchaseError && <p className="text-sm text-maroon-bright sm:col-span-3">{purchaseError}</p>}
           {purchaseResult && (
             <p className="text-sm text-emerald sm:col-span-3">
@@ -600,8 +767,90 @@ export default function AccountPage() {
             {savingPurchase ? "Saving..." : "Record Purchase"}
           </button>
         </form>
+        )}
+
+        {/* Purchase history */}
+        {activeTab === "history" && (
+        <div className="card-glass mt-6 rounded-3xl px-6 py-7 sm:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Receipt size={17} className="text-gold-deep" />
+              <p className="font-display text-base font-bold text-ink">
+                Purchase History {filteredPurchases.length > 0 && `(${filteredPurchases.length})`}
+              </p>
+            </div>
+            <div className="relative w-full sm:w-56">
+              <Phone size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gold-deep/50" />
+              <input
+                type="tel"
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                placeholder="Search by mobile number"
+                className="w-full rounded-xl border border-gold-deep/25 bg-white/50 py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-gold-deep"
+              />
+            </div>
+          </div>
+
+          {loadingPurchases ? (
+            <p className="mt-4 flex items-center gap-2 text-sm text-cocoa/60">
+              <Loader2 size={14} className="animate-spin" />
+              Loading...
+            </p>
+          ) : purchasesLoadError ? (
+            <p className="mt-4 text-sm text-maroon-bright">{purchasesLoadError}</p>
+          ) : purchases.length === 0 ? (
+            <p className="mt-4 text-sm text-cocoa/60">No purchases recorded yet.</p>
+          ) : filteredPurchases.length === 0 ? (
+            <p className="mt-4 text-sm text-cocoa/60">No purchases match that mobile number.</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-gold-deep/15 text-xs uppercase tracking-wide text-cocoa/50">
+                    <th className="pb-2 pr-4 font-semibold">Date</th>
+                    <th className="pb-2 pr-4 font-semibold">Customer</th>
+                    <th className="pb-2 pr-4 font-semibold">Biryanis</th>
+                    <th className="pb-2 pr-4 font-semibold">Amount</th>
+                    <th className="pb-2 pr-4 font-semibold">Points</th>
+                    <th className="pb-2 pr-4 font-semibold">Referral Bonus</th>
+                    <th className="pb-2 font-semibold"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPurchases.map((p) => {
+                    const buyer = customers.find((c) => c.mobile === p.customer_mobile);
+                    const referrer = p.referrer_mobile ? customers.find((c) => c.mobile === p.referrer_mobile) : null;
+                    return (
+                      <tr key={p.id} className="border-b border-gold-deep/10 text-cocoa/80">
+                        <td className="py-2.5 pr-4 text-xs text-cocoa/60">{formatDateTime(p.created_at)}</td>
+                        <td className="py-2.5 pr-4 font-medium text-ink">{buyer?.name || displayMobile(p.customer_mobile)}</td>
+                        <td className="py-2.5 pr-4">{p.biryani_count}</td>
+                        <td className="py-2.5 pr-4">{rupees(p.amount)}</td>
+                        <td className="py-2.5 pr-4">+{p.points_awarded}</td>
+                        <td className="py-2.5 pr-4 text-cocoa/60">
+                          {p.referral_bonus > 0 ? `${rupees(p.referral_bonus)} → ${referrer?.name || displayMobile(p.referrer_mobile!)}` : "—"}
+                        </td>
+                        <td className="py-2.5 text-right">
+                          <button
+                            onClick={() => handleDeletePurchase(p.id)}
+                            aria-label="Delete purchase"
+                            className="text-cocoa/40 transition hover:text-maroon-bright"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        )}
 
         {/* Redeem referral balance */}
+        {activeTab === "redeem" && (
         <form
           onSubmit={handleRedeem}
           className="card-glass mt-6 grid grid-cols-1 gap-4 rounded-3xl px-6 py-7 text-left sm:grid-cols-3 sm:px-8"
@@ -649,15 +898,34 @@ export default function AccountPage() {
             {savingRedeem ? "Saving..." : "Record Redemption"}
           </button>
         </form>
+        )}
 
         {/* Add/update customer */}
+        {activeTab === "form" && (
         <form
           onSubmit={handleSaveCustomer}
           className="card-glass mt-6 grid grid-cols-1 gap-4 rounded-3xl px-6 py-7 text-left sm:grid-cols-2 sm:px-8"
         >
-          <div className="sm:col-span-2 flex items-center gap-2">
-            <Plus size={17} className="text-gold-deep" />
-            <p className="font-display text-base font-bold text-ink">Add / Update a Customer</p>
+          <div className="sm:col-span-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              {editingMobile ? <Pencil size={17} className="text-gold-deep" /> : <Plus size={17} className="text-gold-deep" />}
+              <p className="font-display text-base font-bold text-ink">
+                {editingMobile ? `Editing ${form.name || editingMobile}` : "Add a Customer"}
+              </p>
+            </div>
+            {editingMobile && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingMobile(null);
+                  setForm({ name: "", mobile: "", pin: "", dob: "", anniversary: "", notes: "", referredBy: "" });
+                  setFormError("");
+                }}
+                className="text-xs font-semibold text-cocoa/60 underline-offset-2 hover:underline"
+              >
+                Cancel
+              </button>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -737,11 +1005,11 @@ export default function AccountPage() {
             />
           </div>
 
+          {editingMobile && (
+            <p className="text-xs text-cocoa/50 sm:col-span-2">Leave PIN blank to keep the existing one.</p>
+          )}
           {formError && <p className="text-sm text-maroon-bright sm:col-span-2">{formError}</p>}
           {formSuccess && <p className="text-sm text-emerald sm:col-span-2">Saved!</p>}
-          {!form.dob && !form.anniversary && !formError && (
-            <p className="text-xs text-cocoa/50 sm:col-span-2">Enter at least a birthday or an anniversary date.</p>
-          )}
 
           <button
             type="submit"
@@ -749,11 +1017,13 @@ export default function AccountPage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-deep via-gold to-gold-bright px-6 py-2.5 text-sm font-bold uppercase tracking-wide text-ink transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-2 sm:w-fit"
           >
             {savingForm ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-            {savingForm ? "Saving..." : "Save Customer"}
+            {savingForm ? "Saving..." : editingMobile ? "Save Changes" : "Save Customer"}
           </button>
         </form>
+        )}
 
         {/* All customers */}
+        {activeTab === "customers" && (
         <div className="card-glass mt-6 rounded-3xl px-6 py-7 sm:px-8">
           <div className="flex items-center gap-2">
             <Users size={17} className="text-gold-deep" />
@@ -790,8 +1060,9 @@ export default function AccountPage() {
                       <td className="py-2.5 pr-4 font-medium text-ink">
                         {c.name}
                         {c.is_admin && <span className="ml-2 text-xs text-gold-deep">(admin)</span>}
+                        {!c.has_pin && <span className="ml-2 rounded-full bg-maroon-bright/10 px-2 py-0.5 text-xs font-semibold text-maroon-bright">No PIN</span>}
                       </td>
-                      <td className="py-2.5 pr-4">{c.mobile}</td>
+                      <td className="py-2.5 pr-4">{displayMobile(c.mobile)}</td>
                       <td className="py-2.5 pr-4">{c.points}</td>
                       <td className="py-2.5 pr-4">
                         {rupees(c.referral_balance)}
@@ -799,15 +1070,24 @@ export default function AccountPage() {
                           <span className="ml-2 rounded-full bg-emerald/10 px-2 py-0.5 text-xs font-semibold text-emerald">Redeemable</span>
                         )}
                       </td>
-                      <td className="py-2.5 pr-4 text-cocoa/60">{c.referred_by || "—"}</td>
+                      <td className="py-2.5 pr-4 text-cocoa/60">{c.referred_by ? displayMobile(c.referred_by) : "—"}</td>
                       <td className="py-2.5 text-right">
-                        <button
-                          onClick={() => handleDeleteCustomer(c.mobile)}
-                          aria-label="Delete"
-                          className="text-cocoa/40 transition hover:text-maroon-bright"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center justify-end gap-2.5">
+                          <button
+                            onClick={() => handleEditCustomer(c)}
+                            aria-label="Edit"
+                            className="text-cocoa/40 transition hover:text-gold-deep"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCustomer(c.id)}
+                            aria-label="Delete"
+                            className="text-cocoa/40 transition hover:text-maroon-bright"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -816,6 +1096,7 @@ export default function AccountPage() {
             </div>
           )}
         </div>
+        )}
       </div>
     </main>
   );

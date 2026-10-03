@@ -23,29 +23,81 @@ export async function POST(req: NextRequest) {
   const customerMobile = normalizeMobile(typeof body.customerMobile === "string" ? body.customerMobile : "");
   const biryaniCount = Number(body.biryaniCount);
   const amount = Number(body.amount);
+  const referredByRaw = typeof body.referredBy === "string" ? body.referredBy.trim() : "";
+  const referredByInput = referredByRaw ? normalizeMobile(referredByRaw) : "";
 
   if (!customerMobile || !Number.isFinite(biryaniCount) || biryaniCount <= 0 || !Number.isFinite(amount) || amount < 0) {
     return NextResponse.json({ error: "A customer, biryani count, and amount are required." }, { status: 400 });
   }
+  if (referredByInput && referredByInput === customerMobile) {
+    return NextResponse.json({ error: "A customer cannot refer themselves." }, { status: 400 });
+  }
 
+  // Match on the normalized mobile OR its bare 10-digit form, so a row left
+  // over from before numbers were normalized still resolves. Once found,
+  // the record's own `mobile` value (not the input) is used everywhere
+  // below, since that's the exact value other rows actually reference.
+  const bareMobile = customerMobile.length === 12 && customerMobile.startsWith("91") ? customerMobile.slice(2) : customerMobile;
   const supabase = getSupabaseServer();
 
-  const { data: customer } = await supabase
+  let { data: customer } = await supabase
     .from("customers")
     .select("*")
-    .eq("mobile", customerMobile)
+    .or(`mobile.eq.${customerMobile},mobile.eq.${bareMobile}`)
     .maybeSingle<Customer>();
 
   if (!customer) {
-    return NextResponse.json({ error: "No customer found with that mobile number." }, { status: 404 });
+    // Same as the referrer below: a walk-in customer who's never ordered
+    // before shouldn't have to be added separately first. They're created
+    // with their mobile as a placeholder name — rename via Edit later.
+    const { data: newCustomer, error: newCustomerError } = await supabase
+      .from("customers")
+      .insert({ name: customerMobile, mobile: customerMobile, pin_hash: "" })
+      .select("*")
+      .single<Customer>();
+    if (newCustomerError || !newCustomer) {
+      return NextResponse.json({ error: "Could not add this customer." }, { status: 500 });
+    }
+    customer = newCustomer;
+  }
+
+  // A referrer entered on the purchase form takes priority over whatever is
+  // already on file for this customer — it both decides this purchase's
+  // bonus and updates `referred_by` so future purchases keep crediting them
+  // too. Leaving the field blank falls back to the existing referred_by.
+  let referrerMobile = customer.referred_by;
+  if (referredByInput) {
+    const referrerBareMobile = referredByInput.length === 12 && referredByInput.startsWith("91") ? referredByInput.slice(2) : referredByInput;
+    const { data: existingReferrer } = await supabase
+      .from("customers")
+      .select("mobile")
+      .or(`mobile.eq.${referredByInput},mobile.eq.${referrerBareMobile}`)
+      .maybeSingle<Pick<Customer, "mobile">>();
+
+    if (existingReferrer) {
+      referrerMobile = existingReferrer.mobile;
+    } else {
+      const { data: newReferrer, error: newReferrerError } = await supabase
+        .from("customers")
+        .insert({ name: referredByInput, mobile: referredByInput, pin_hash: "" })
+        .select("mobile")
+        .single<Pick<Customer, "mobile">>();
+      if (newReferrerError || !newReferrer) {
+        return NextResponse.json({ error: "Could not add the referrer." }, { status: 500 });
+      }
+      referrerMobile = newReferrer.mobile;
+    }
+
+    if (referrerMobile !== customer.referred_by) {
+      await supabase.from("customers").update({ referred_by: referrerMobile }).eq("id", customer.id);
+    }
   }
 
   const pointsAwarded = Math.round(biryaniCount * POINTS_PER_BIRYANI);
-  const referrerMobile = customer.referred_by;
   const referralBonus = referrerMobile ? Math.round(amount * REFERRAL_RATE * 100) / 100 : 0;
 
   const { error: purchaseError } = await supabase.from("purchases").insert({
-    customer_mobile: customerMobile,
+    customer_mobile: customer.mobile,
     biryani_count: biryaniCount,
     amount,
     referrer_mobile: referrerMobile,
@@ -59,7 +111,7 @@ export async function POST(req: NextRequest) {
   const { error: pointsError } = await supabase
     .from("customers")
     .update({ points: customer.points + pointsAwarded })
-    .eq("mobile", customerMobile);
+    .eq("id", customer.id);
   if (pointsError) {
     return NextResponse.json({ error: "Purchase recorded, but points could not be updated." }, { status: 500 });
   }

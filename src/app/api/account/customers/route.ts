@@ -20,14 +20,15 @@ export async function GET(req: NextRequest) {
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from("customers")
-    .select("id, name, mobile, is_admin, dob, anniversary, notes, referred_by, points, referral_balance, lifetime_referral_earned, created_at")
+    .select("id, name, mobile, is_admin, dob, anniversary, notes, referred_by, points, referral_balance, lifetime_referral_earned, created_at, pin_hash")
     .order("created_at", { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: "Could not load customers." }, { status: 500 });
   }
 
-  return NextResponse.json({ customers: data });
+  const customers = (data || []).map(({ pin_hash, ...rest }) => ({ ...rest, has_pin: !!pin_hash }));
+  return NextResponse.json({ customers });
 }
 
 export async function POST(req: NextRequest) {
@@ -51,9 +52,6 @@ export async function POST(req: NextRequest) {
   if (!name || !/^\d{10,12}$/.test(mobile)) {
     return NextResponse.json({ error: "A name and valid mobile number are required." }, { status: 400 });
   }
-  if (!dob && !anniversary) {
-    return NextResponse.json({ error: "At least a date of birth or anniversary is required." }, { status: 400 });
-  }
   if (referredBy && referredBy === mobile) {
     return NextResponse.json({ error: "A customer cannot refer themselves." }, { status: 400 });
   }
@@ -76,14 +74,18 @@ export async function POST(req: NextRequest) {
     record.pin_hash = await hashPin(pin);
   }
 
+  // Match on the normalized mobile OR its bare 10-digit form, so a row left
+  // over from before numbers were normalized (e.g. migrated from the old
+  // customer_dates table) gets updated in place instead of duplicated.
+  const bareMobile = mobile.length === 12 && mobile.startsWith("91") ? mobile.slice(2) : mobile;
   const { data: existing } = await supabase
     .from("customers")
-    .select("id, pin_hash")
-    .eq("mobile", mobile)
+    .select("id, mobile, pin_hash")
+    .or(`mobile.eq.${mobile},mobile.eq.${bareMobile}`)
     .maybeSingle();
 
   if (existing) {
-    const { error } = await supabase.from("customers").update(record).eq("mobile", mobile);
+    const { error } = await supabase.from("customers").update(record).eq("id", existing.id);
     if (error) return NextResponse.json({ error: "Could not update customer." }, { status: 500 });
   } else {
     if (!pin) {
@@ -104,16 +106,16 @@ export async function DELETE(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const mobile = normalizeMobile(searchParams.get("mobile") || "");
-  if (!mobile) {
-    return NextResponse.json({ error: "Mobile number is required." }, { status: 400 });
+  const id = searchParams.get("id") || "";
+  if (!id) {
+    return NextResponse.json({ error: "Customer id is required." }, { status: 400 });
   }
-  if (mobile === access.customer.mobile) {
+  if (id === access.customer.id) {
     return NextResponse.json({ error: "You cannot delete your own admin account." }, { status: 400 });
   }
 
   const supabase = getSupabaseServer();
-  const { error } = await supabase.from("customers").delete().eq("mobile", mobile);
+  const { error } = await supabase.from("customers").delete().eq("id", id);
   if (error) return NextResponse.json({ error: "Could not delete customer." }, { status: 500 });
 
   return NextResponse.json({ ok: true });
