@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { MapPin, Phone, Clock, Heart } from "lucide-react";
+import { MapPin, Phone, Clock, Heart, Megaphone } from "lucide-react";
 import { InstagramIcon, FacebookIcon, WhatsAppIcon } from "./icons";
 
 const QUICK_LINKS = [
@@ -14,6 +14,7 @@ const QUICK_LINKS = [
 
 const SOCIALS = [
   { Icon: WhatsAppIcon, href: "https://wa.me/917330922131", label: "WhatsApp", color: "#25D366" },
+  { Icon: Megaphone, href: "https://whatsapp.com/channel/0029VbDj6OgK5cDCzF8Yqx2y", label: "WhatsApp Channel", color: "#25D366" },
   { Icon: InstagramIcon, href: "https://www.instagram.com/bakasurabiryani/", label: "Instagram", color: "#E1306C" },
   { Icon: FacebookIcon, href: "https://www.facebook.com/bakasurabiryani", label: "Facebook", color: "#1877F2" },
 ];

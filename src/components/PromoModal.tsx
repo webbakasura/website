@@ -4,15 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Gift, Star, Wallet } from "lucide-react";
+import { WhatsAppIcon } from "./icons";
 
-const SEEN_KEY = "bakasura-referral-promo-seen";
+const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VbDj6OgK5cDCzF8Yqx2y";
 
 export default function PromoModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (sessionStorage.getItem(SEEN_KEY)) return;
     const timer = setTimeout(() => setOpen(true), 400);
     return () => clearTimeout(timer);
   }, []);
@@ -33,7 +32,6 @@ export default function PromoModal() {
 
   function close() {
     setOpen(false);
-    sessionStorage.setItem(SEEN_KEY, "1");
   }
 
   return (
@@ -121,6 +119,15 @@ export default function PromoModal() {
               >
                 Got It · సరే
               </button>
+              <a
+                href={WHATSAPP_CHANNEL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#25D366]/40 bg-[#25D366]/10 px-6 py-2.5 text-sm font-bold text-[#128C4A] transition hover:bg-[#25D366]/20"
+              >
+                <WhatsAppIcon width={16} height={16} />
+                Follow us on WhatsApp · వాట్సాప్‌లో ఫాలో అవ్వండి
+              </a>
               <Link
                 href="/account"
                 onClick={close}
