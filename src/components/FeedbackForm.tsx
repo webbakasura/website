@@ -39,9 +39,17 @@ const EMPTY_RATINGS: Ratings = {
   overallRating: null,
 };
 
-export default function FeedbackForm() {
-  const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
+export default function FeedbackForm({
+  initialName = "",
+  initialContact = "",
+  onSuccess,
+}: {
+  initialName?: string;
+  initialContact?: string;
+  onSuccess?: () => void;
+} = {}) {
+  const [name, setName] = useState(initialName);
+  const [contact, setContact] = useState(initialContact);
   const [message, setMessage] = useState("");
 
   const [ratings, setRatings] =
@@ -122,6 +130,7 @@ export default function FeedbackForm() {
       setContact("");
       setMessage("");
       setRatings(EMPTY_RATINGS);
+      onSuccess?.();
     } catch {
       setStatus("error");
 

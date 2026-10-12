@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn } from "lucide-react";
+import LoginModal from "./LoginModal";
 
 const LINKS = [
   { label: "Home", href: "/" },
@@ -17,6 +18,7 @@ const LINKS = [
 export default function Navbar({ showLinks = true }: { showLinks?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -63,6 +65,13 @@ export default function Navbar({ showLinks = true }: { showLinks?: boolean }) {
                 {link.label}
               </Link>
             ))}
+            <button
+              onClick={() => setLoginOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-gold-deep/30 px-4 py-1.5 text-sm font-semibold text-gold-deep transition hover:bg-gold/10"
+            >
+              <LogIn size={14} />
+              Login
+            </button>
           </div>
         )}
 
@@ -92,9 +101,21 @@ export default function Navbar({ showLinks = true }: { showLinks?: boolean }) {
                 {link.label}
               </Link>
             ))}
+            <button
+              onClick={() => {
+                setOpen(false);
+                setLoginOpen(true);
+              }}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-2.5 text-left text-sm font-medium text-gold-deep transition hover:bg-gold/10"
+            >
+              <LogIn size={16} />
+              Login
+            </button>
           </div>
         </div>
       )}
+
+      {showLinks && <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />}
     </header>
   );
 }

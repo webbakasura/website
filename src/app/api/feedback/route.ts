@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabaseServer";
+import { verifyAccountAccess } from "@/lib/accountAuth";
 
 const RATING_OPTIONS = [
   "Poor",
@@ -30,19 +31,31 @@ const RATING_FIELDS = [
 /**
  * GET /api/feedback
  *
- * Returns only approved reviews.
- * Contact information and individual category ratings
- * are intentionally not exposed publicly.
+ * Public callers get only approved reviews, with contact information and
+ * individual category ratings intentionally left out. An authenticated
+ * admin (x-account-mobile / x-account-pin headers) gets every submission
+ * with full detail, regardless of status.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseServer();
+    const access = await verifyAccountAccess(req);
+    const isAdmin = access.ok && access.customer.is_admin;
 
-    const { data, error } = await supabase
+    let query = supabase
         .from("feedback")
-        .select("id, name, message, overall_rating, created_at")
-        .eq("status", "approved")
+        .select(
+            isAdmin
+                ? "id, name, contact, message, quality_rating, quantity_rating, taste_rating, temperature_rating, speed_rating, overall_rating, status, created_at"
+                : "id, name, message, overall_rating, created_at"
+        )
         .order("created_at", { ascending: false });
+
+    if (!isAdmin) {
+      query = query.eq("status", "approved");
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Supabase reviews fetch error:", error.message);
@@ -240,5 +253,40 @@ export async function POST(req: NextRequest) {
         },
         { status: 500 }
     );
+  }
+}
+
+/**
+ * DELETE /api/feedback?id=...
+ *
+ * Admin-only moderation: removes a submission (e.g. spam or abuse).
+ */
+export async function DELETE(req: NextRequest) {
+  const access = await verifyAccountAccess(req);
+  if (!access.ok) {
+    return NextResponse.json(
+      { error: access.error, ...(access.status === 429 ? { retryAfterSeconds: access.retryAfterSeconds } : {}) },
+      { status: access.status }
+    );
+  }
+  if (!access.customer.is_admin) {
+    return NextResponse.json({ error: "Admin access required." }, { status: 403 });
+  }
+
+  const id = req.nextUrl.searchParams.get("id") || "";
+  if (!id) {
+    return NextResponse.json({ error: "Feedback id is required." }, { status: 400 });
+  }
+
+  try {
+    const supabase = getSupabaseServer();
+    const { error } = await supabase.from("feedback").delete().eq("id", id);
+    if (error) {
+      return NextResponse.json({ error: "Could not delete feedback." }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Feedback delete route error:", err);
+    return NextResponse.json({ error: "Server not configured." }, { status: 500 });
   }
 }

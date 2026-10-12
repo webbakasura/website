@@ -93,8 +93,21 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const pointsAwarded = Math.round(biryaniCount * POINTS_PER_BIRYANI);
-  const referralBonus = referrerMobile ? Math.round(amount * REFERRAL_RATE * 100) / 100 : 0;
+  // Points and referral bonuses only start accruing once a customer has
+  // completed the one-time rewards onboarding (email subscription +
+  // feedback). The purchase itself is still recorded either way.
+  const pointsAwarded = customer.rewards_unlocked ? Math.round(biryaniCount * POINTS_PER_BIRYANI) : 0;
+
+  let referrer: Pick<Customer, "rewards_unlocked" | "referral_balance" | "lifetime_referral_earned"> | null = null;
+  if (referrerMobile) {
+    const { data } = await supabase
+      .from("customers")
+      .select("rewards_unlocked, referral_balance, lifetime_referral_earned")
+      .eq("mobile", referrerMobile)
+      .maybeSingle<Pick<Customer, "rewards_unlocked" | "referral_balance" | "lifetime_referral_earned">>();
+    referrer = data;
+  }
+  const referralBonus = referrer?.rewards_unlocked ? Math.round(amount * REFERRAL_RATE * 100) / 100 : 0;
 
   const { error: purchaseError } = await supabase.from("purchases").insert({
     customer_mobile: customer.mobile,
@@ -116,22 +129,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Purchase recorded, but points could not be updated." }, { status: 500 });
   }
 
-  if (referrerMobile && referralBonus > 0) {
-    const { data: referrer } = await supabase
+  if (referrerMobile && referrer && referralBonus > 0) {
+    await supabase
       .from("customers")
-      .select("referral_balance, lifetime_referral_earned")
-      .eq("mobile", referrerMobile)
-      .maybeSingle<Pick<Customer, "referral_balance" | "lifetime_referral_earned">>();
-
-    if (referrer) {
-      await supabase
-        .from("customers")
-        .update({
-          referral_balance: Math.round((referrer.referral_balance + referralBonus) * 100) / 100,
-          lifetime_referral_earned: Math.round((referrer.lifetime_referral_earned + referralBonus) * 100) / 100,
-        })
-        .eq("mobile", referrerMobile);
-    }
+      .update({
+        referral_balance: Math.round((referrer.referral_balance + referralBonus) * 100) / 100,
+        lifetime_referral_earned: Math.round((referrer.lifetime_referral_earned + referralBonus) * 100) / 100,
+      })
+      .eq("mobile", referrerMobile);
   }
 
   return NextResponse.json({ ok: true, pointsAwarded, referralBonus });

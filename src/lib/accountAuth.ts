@@ -19,6 +19,11 @@ export type Customer = {
   referral_balance: number;
   lifetime_referral_earned: number;
   created_at: string;
+  email: string | null;
+  email_subscribed: boolean;
+  whatsapp_followed: boolean;
+  feedback_given: boolean;
+  rewards_unlocked: boolean;
 };
 
 type LockoutRow = {
