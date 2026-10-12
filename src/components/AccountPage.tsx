@@ -162,7 +162,7 @@ export default function AccountPage() {
   const [historySearch, setHistorySearch] = useState("");
 
   const [feedback, setFeedback] = useState<Feedback[]>([]);
-  const [loadingFeedback, setLoadingFeedback] = useState(false);
+  const [loadingFeedback, setLoadingFeedback] = useState(true);
   const [feedbackLoadError, setFeedbackLoadError] = useState("");
 
   // Customer-side one-time rewards onboarding
@@ -355,8 +355,8 @@ export default function AccountPage() {
   }, []);
 
   useEffect(() => {
-    if (session && customer?.is_admin) loadFeedback(session);
-  }, [session, customer?.is_admin, loadFeedback]);
+    if (session && customer) loadFeedback(session);
+  }, [session, customer, loadFeedback]);
 
   async function handleDeleteFeedback(id: string) {
     if (!session) return;
@@ -647,14 +647,19 @@ export default function AccountPage() {
   // -------- Customer dashboard --------
   if (!customer.is_admin) {
     const redeemable = customer.referral_balance >= MIN_REDEMPTION;
-    const onboardingComplete = customer.email_subscribed && customer.whatsapp_followed && customer.feedback_given;
-    const currentStep = !customer.email_subscribed ? 1 : !customer.whatsapp_followed ? 2 : !customer.feedback_given ? 3 : 4;
+    // feedback_given only tracks that the step was completed once — if an
+    // admin later deletes that submission, this customer currently has no
+    // feedback on file at all, so treat the step as not done again rather
+    // than trusting a flag that's drifted out of sync with reality.
+    const feedbackActuallyGiven = loadingFeedback ? customer.feedback_given : feedback.length > 0;
+    const onboardingComplete = customer.email_subscribed && customer.whatsapp_followed && feedbackActuallyGiven;
+    const currentStep = !customer.email_subscribed ? 1 : !customer.whatsapp_followed ? 2 : !feedbackActuallyGiven ? 3 : 4;
 
     return (
       <main className="relative min-h-[100svh] overflow-hidden px-5 pb-16 pt-28">
         <Navbar showLinks={false} />
         <AnimatedBackground />
-        <div className="relative z-10 mx-auto max-w-3xl">
+        <div className="relative z-10 mx-auto max-w-7xl">
           <div className="flex justify-end">
             <button
               onClick={handleLogout}
@@ -700,7 +705,7 @@ export default function AccountPage() {
               </p>
 
               {currentStep === 1 && (
-                <div className="card-glass mt-6 rounded-3xl px-6 py-7 text-center sm:px-8">
+                <div className="card-glass mx-auto mt-6 max-w-lg rounded-3xl px-6 py-7 text-center sm:px-8">
                   <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 ring-1 ring-gold-deep/25">
                     <Mail size={20} className="text-gold-deep" />
                   </span>
@@ -728,7 +733,7 @@ export default function AccountPage() {
               )}
 
               {currentStep === 2 && (
-                <div className="card-glass mt-6 rounded-3xl px-6 py-7 text-center sm:px-8">
+                <div className="card-glass mx-auto mt-6 max-w-lg rounded-3xl px-6 py-7 text-center sm:px-8">
                   <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366]/10 ring-1 ring-[#25D366]/30">
                     <WhatsAppIcon width={20} height={20} className="text-[#25D366]" />
                   </span>
@@ -756,7 +761,7 @@ export default function AccountPage() {
               )}
 
               {currentStep === 3 && (
-                <div className="mt-6">
+                <div className="mx-auto mt-6 max-w-5xl">
                   <div className="text-center">
                     <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 ring-1 ring-gold-deep/25">
                       <MessageSquareText size={20} className="text-gold-deep" />
@@ -770,6 +775,7 @@ export default function AccountPage() {
                       initialContact={displayMobile(customer.mobile)}
                       onSuccess={() => {
                         handleOnboarding("feedback").catch(() => {});
+                        if (session) loadFeedback(session);
                       }}
                     />
                   </div>
@@ -778,7 +784,7 @@ export default function AccountPage() {
             </div>
           ) : (
             <>
-              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div className="card-glass rounded-3xl px-6 py-6 text-center">
                   <Star size={20} className="mx-auto text-gold-deep" />
                   <p className="mt-2 font-display text-2xl font-bold text-ink">{customer.points}</p>
@@ -787,26 +793,66 @@ export default function AccountPage() {
                 <div className="card-glass rounded-3xl px-6 py-6 text-center">
                   <Wallet size={20} className="mx-auto text-gold-deep" />
                   <p className="mt-2 font-display text-2xl font-bold text-ink">{rupees(customer.referral_balance)}</p>
-                  <p className="text-xs uppercase tracking-wide text-cocoa/60">Referral Balance</p>
+                  <p className="text-xs uppercase tracking-wide text-cocoa/60">Referral Discount</p>
+                </div>
+                <div className="card-glass rounded-3xl px-6 py-6 text-center">
+                  <Gift size={20} className="mx-auto text-gold-deep" />
+                  <p className="mt-2 font-display text-2xl font-bold text-ink">{rupees(customer.lifetime_referral_earned)}</p>
+                  <p className="text-xs uppercase tracking-wide text-cocoa/60">Lifetime Earned</p>
+                </div>
+                <div className="card-glass rounded-3xl px-6 py-6 text-center">
+                  <CheckCircle2 size={20} className={`mx-auto ${redeemable ? "text-emerald" : "text-cocoa/30"}`} />
+                  <p className={`mt-2 font-display text-2xl font-bold ${redeemable ? "text-emerald" : "text-cocoa/40"}`}>
+                    {redeemable ? "Yes" : "No"}
+                  </p>
+                  <p className="text-xs uppercase tracking-wide text-cocoa/60">Redeemable</p>
                 </div>
               </div>
 
-              <div className="card-glass mt-6 rounded-3xl px-6 py-6 text-left sm:px-8">
-                <p className="font-display text-base font-bold text-ink">Your Referral Number</p>
-                <p className="mt-1 text-sm text-cocoa/70">
-                  Share your mobile number <span className="font-semibold text-ink">{displayMobile(customer.mobile)}</span> with friends —
-                  when they order and mention it, you earn 10% of their bill every time they order.
-                </p>
-                <p className="mt-3 text-sm text-cocoa/70">
-                  {redeemable ? (
-                    <span className="font-semibold text-emerald">Your balance is redeemable — ask staff to apply it as a discount on your next order.</span>
+              <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div className="card-glass rounded-3xl px-6 py-6 text-left sm:px-8">
+                  <p className="font-display text-base font-bold text-ink">Your Referral Number</p>
+                  <p className="mt-1 text-sm text-cocoa/70">
+                    Share your mobile number <span className="font-semibold text-ink">{displayMobile(customer.mobile)}</span> with friends —
+                    when they order and mention it, you earn 10% of their bill every time they order.
+                  </p>
+                  <p className="mt-3 text-sm text-cocoa/70">
+                    {redeemable ? (
+                      <span className="font-semibold text-emerald">Your balance is redeemable — ask staff to apply it as a discount on your next order.</span>
+                    ) : (
+                      <>Balance becomes redeemable once it reaches {rupees(MIN_REDEMPTION)}.</>
+                    )}
+                  </p>
+                </div>
+
+                <div className="card-glass rounded-3xl px-6 py-6 text-left sm:px-8">
+                  <div className="flex items-center gap-2">
+                    <MessageSquareText size={17} className="text-gold-deep" />
+                    <p className="font-display text-base font-bold text-ink">Your Feedback</p>
+                  </div>
+                  {loadingFeedback ? (
+                    <p className="mt-4 flex items-center gap-2 text-sm text-cocoa/60">
+                      <Loader2 size={14} className="animate-spin" />
+                      Loading...
+                    </p>
+                  ) : feedbackLoadError ? (
+                    <p className="mt-4 text-sm text-maroon-bright">{feedbackLoadError}</p>
+                  ) : feedback.length === 0 ? (
+                    <p className="mt-4 text-sm text-cocoa/60">You haven&apos;t submitted any feedback yet.</p>
                   ) : (
-                    <>Balance becomes redeemable once it reaches {rupees(MIN_REDEMPTION)}.</>
+                    <div className="mt-4 flex flex-col gap-2.5">
+                      {feedback.map((f) => (
+                        <div key={f.id} className="rounded-xl border border-gold-deep/20 bg-white/40 px-4 py-3 text-sm">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs text-cocoa/50">{formatDateTime(f.created_at)}</p>
+                            {ratingBadge(f.overall_rating)}
+                          </div>
+                          {f.message && <p className="mt-1.5 text-sm text-cocoa/70">{f.message}</p>}
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </p>
-                <p className="mt-3 text-xs text-cocoa/50">
-                  Lifetime referral earnings: {rupees(customer.lifetime_referral_earned)}
-                </p>
+                </div>
               </div>
 
               <div className="card-glass mt-6 rounded-3xl px-6 py-6 text-left sm:px-8">
@@ -824,7 +870,7 @@ export default function AccountPage() {
                 ) : purchases.length === 0 ? (
                   <p className="mt-4 text-sm text-cocoa/60">No purchases recorded yet.</p>
                 ) : (
-                  <div className="mt-4 flex flex-col gap-2.5">
+                  <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                     {purchases.map((p) => (
                       <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold-deep/20 bg-white/40 px-4 py-3 text-sm">
                         <div>
@@ -912,7 +958,9 @@ export default function AccountPage() {
         {activeTab === "detail" && selectedCustomer && (() => {
           const c = selectedCustomer;
           const custPurchases = purchases.filter((p) => p.customer_mobile === c.mobile);
-          const custFeedback = feedback.filter((f) => f.contact === displayMobile(c.mobile) || f.contact === c.mobile);
+          const custFeedback = feedback.filter(
+            (f) => f.contact === displayMobile(c.mobile) || f.contact === c.mobile || (!!c.email && f.contact === c.email)
+          );
           const referrer = c.referred_by ? customers.find((x) => x.mobile === c.referred_by) : null;
           return (
             <div className="mt-6 flex flex-col gap-6">

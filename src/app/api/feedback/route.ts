@@ -34,24 +34,35 @@ const RATING_FIELDS = [
  * Public callers get only approved reviews, with contact information and
  * individual category ratings intentionally left out. An authenticated
  * admin (x-account-mobile / x-account-pin headers) gets every submission
- * with full detail, regardless of status.
+ * with full detail, regardless of status. An authenticated non-admin
+ * customer gets full detail too, but only for their own submissions
+ * (matched by contact against their mobile number).
  */
 export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseServer();
     const access = await verifyAccountAccess(req);
     const isAdmin = access.ok && access.customer.is_admin;
+    const isOwnCustomer = access.ok && !access.customer.is_admin;
+
+    const fullFields = "id, name, contact, message, quality_rating, quantity_rating, taste_rating, temperature_rating, speed_rating, overall_rating, status, created_at";
+    const publicFields = "id, name, message, overall_rating, created_at";
 
     let query = supabase
         .from("feedback")
-        .select(
-            isAdmin
-                ? "id, name, contact, message, quality_rating, quantity_rating, taste_rating, temperature_rating, speed_rating, overall_rating, status, created_at"
-                : "id, name, message, overall_rating, created_at"
-        )
+        .select(isAdmin || isOwnCustomer ? fullFields : publicFields)
         .order("created_at", { ascending: false });
 
-    if (!isAdmin) {
+    if (isOwnCustomer && access.ok) {
+      const mobile = access.customer.mobile;
+      const bareMobile = mobile.length === 12 && mobile.startsWith("91") ? mobile.slice(2) : mobile;
+      // Also match by their subscribed email — feedback submitted before
+      // this account system existed often used an email as contact, with
+      // no mobile number on file for the row at all.
+      const matchers = [`contact.eq.${mobile}`, `contact.eq.${bareMobile}`];
+      if (access.customer.email) matchers.push(`contact.eq.${access.customer.email}`);
+      query = query.or(matchers.join(","));
+    } else if (!isAdmin) {
       query = query.eq("status", "approved");
     }
 
