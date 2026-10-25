@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Gift, Star, Wallet } from "lucide-react";
+import { X, Gift, Star, Wallet, LogIn } from "lucide-react";
 import { WhatsAppIcon } from "./icons";
+import LoginModal from "./LoginModal";
 
 const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VbDj6OgK5cDCzF8Yqx2y";
 
 export default function PromoModal() {
   const [open, setOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setOpen(true), 400);
@@ -35,6 +36,7 @@ export default function PromoModal() {
   }
 
   return (
+    <>
     <AnimatePresence>
       {open && (
         <motion.div
@@ -113,12 +115,24 @@ export default function PromoModal() {
             </p>
 
             <div className="mt-6 flex flex-col gap-2.5">
-              <button
-                onClick={close}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-deep via-gold to-gold-bright px-6 py-2.5 text-sm font-bold uppercase tracking-wide text-ink transition hover:scale-[1.02]"
-              >
-                Got It · సరే
-              </button>
+              <div className="flex gap-2.5">
+                <button
+                  onClick={close}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-deep via-gold to-gold-bright px-6 py-2.5 text-sm font-bold uppercase tracking-wide text-ink transition hover:scale-[1.02]"
+                >
+                  Got It · సరే
+                </button>
+                <button
+                  onClick={() => {
+                    close();
+                    setLoginOpen(true);
+                  }}
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-gold-deep/30 px-6 py-2.5 text-sm font-bold uppercase tracking-wide text-gold-deep transition hover:bg-gold/10"
+                >
+                  <LogIn size={15} />
+                  Login
+                </button>
+              </div>
               <a
                 href={WHATSAPP_CHANNEL_URL}
                 target="_blank"
@@ -128,17 +142,12 @@ export default function PromoModal() {
                 <WhatsAppIcon width={16} height={16} />
                 Follow us on WhatsApp · వాట్సాప్‌లో ఫాలో అవ్వండి
               </a>
-              <Link
-                href="/account"
-                onClick={close}
-                className="text-xs font-semibold text-cocoa/60 underline-offset-2 hover:text-gold-deep hover:underline"
-              >
-                Already a member? View your rewards · ఇప్పటికే సభ్యులా? మీ రివార్డ్స్ చూడండి
-              </Link>
             </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
+    <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+    </>
   );
 }
