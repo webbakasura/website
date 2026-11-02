@@ -4,6 +4,7 @@ import AnimatedBackground from "./AnimatedBackground";
 import Navbar from "./Navbar";
 import PromoModal from "./PromoModal";
 import Hero from "./Hero";
+import DeliveryPlatforms from "./DeliveryPlatforms";
 import Categories from "./Categories";
 import Story from "./Story";
 import Team from "./Team";
@@ -23,6 +24,7 @@ export default function Home() {
       <Navbar />
       <AnimatedBackground />
       <Hero />
+      <DeliveryPlatforms />
       <Categories />
       <Story />
       <Team />

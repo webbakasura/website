@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { verifyAccountAccess } from "@/lib/accountAuth";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 function unauthorized(access: { status: 401 | 429; error: string; retryAfterSeconds?: number }) {
   return NextResponse.json(
     { error: access.error, ...(access.status === 429 ? { retryAfterSeconds: access.retryAfterSeconds } : {}) },
@@ -20,22 +18,19 @@ export async function POST(req: NextRequest) {
   const supabase = getSupabaseServer();
   const customer = access.customer;
 
-  if (action === "email") {
-    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    if (!EMAIL_RE.test(email)) {
-      return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
-    }
-
-    const { error: subError } = await supabase.from("subscribers").insert({ email });
+  if (action === "subscribe") {
+    // Subscribes using the mobile number already on file from login — no
+    // email needed, nothing for the customer to type.
+    const { error: subError } = await supabase.from("subscribers").insert({ mobile: customer.mobile });
     if (subError && subError.code !== "23505") {
       return NextResponse.json({ error: "Could not subscribe." }, { status: 500 });
     }
 
     const { error } = await supabase
       .from("customers")
-      .update({ email, email_subscribed: true })
+      .update({ email_subscribed: true })
       .eq("id", customer.id);
-    if (error) return NextResponse.json({ error: "Could not save your email." }, { status: 500 });
+    if (error) return NextResponse.json({ error: "Could not subscribe." }, { status: 500 });
   } else if (action === "whatsapp") {
     const { error } = await supabase
       .from("customers")

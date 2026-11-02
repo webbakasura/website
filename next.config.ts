@@ -28,7 +28,10 @@ const securityHeaders = [
   // passcode, but this is good hygiene) from being sent to sites we link
   // out to, like WhatsApp.
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
+  // geolocation=(self) allows this site's own pages to use the browser's
+  // location prompt (e.g. "Share My Live Location" when ordering), while
+  // still blocking any embedded cross-origin frame from requesting it.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self), interest-cohort=()" },
 ];
 
 const nextConfig: NextConfig = {

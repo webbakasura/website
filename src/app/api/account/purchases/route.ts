@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const supabase = getSupabaseServer();
   let query = supabase
     .from("purchases")
-    .select("id, created_at, customer_mobile, biryani_count, amount, referrer_mobile, points_awarded, referral_bonus")
+    .select("id, created_at, customer_mobile, biryani_count, amount, referrer_mobile, points_awarded, referral_bonus, order_source")
     .order("created_at", { ascending: false })
     .limit(200);
 

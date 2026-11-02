@@ -20,9 +20,9 @@ import {
   Star,
   Pencil,
   Receipt,
-  Mail,
   CheckCircle2,
   MessageSquareText,
+  Ticket,
 } from "lucide-react";
 import AnimatedBackground from "./AnimatedBackground";
 import Navbar from "./Navbar";
@@ -66,9 +66,22 @@ type Purchase = {
   referrer_mobile: string | null;
   points_awarded: number;
   referral_bonus: number;
+  order_source: string;
 };
 
-type AdminTab = "wishes" | "purchase" | "redeem" | "form" | "customers" | "history" | "feedback" | "detail";
+type Coupon = {
+  id: string;
+  created_at: string;
+  customer_mobile: string;
+  code: string;
+  amount: number;
+  month: string;
+  expires_at: string;
+  redeemed: boolean;
+  redeemed_at: string | null;
+};
+
+type AdminTab = "wishes" | "purchase" | "redeem" | "form" | "customers" | "history" | "feedback" | "detail" | "coupons";
 
 type Feedback = {
   id: string;
@@ -165,10 +178,16 @@ export default function AccountPage() {
   const [loadingFeedback, setLoadingFeedback] = useState(true);
   const [feedbackLoadError, setFeedbackLoadError] = useState("");
 
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+  const [couponsLoadError, setCouponsLoadError] = useState("");
+  const [couponMobile, setCouponMobile] = useState("");
+  const [savingCoupon, setSavingCoupon] = useState(false);
+  const [couponError, setCouponError] = useState("");
+
   // Customer-side one-time rewards onboarding
-  const [onboardingEmail, setOnboardingEmail] = useState("");
-  const [savingEmail, setSavingEmail] = useState(false);
-  const [emailError, setEmailError] = useState("");
+  const [savingSubscribe, setSavingSubscribe] = useState(false);
+  const [subscribeError, setSubscribeError] = useState("");
   const [savingWhatsapp, setSavingWhatsapp] = useState(false);
 
   const [activeTab, setActiveTab] = useState<AdminTab>("customers");
@@ -182,7 +201,7 @@ export default function AccountPage() {
   const [formSuccess, setFormSuccess] = useState(false);
 
   // Record purchase form
-  const [purchase, setPurchase] = useState({ customerMobile: "", biryaniCount: "", amount: "", referredBy: "" });
+  const [purchase, setPurchase] = useState({ customerMobile: "", biryaniCount: "", amount: "", referredBy: "", orderSource: "whatsapp" });
   const [savingPurchase, setSavingPurchase] = useState(false);
   const [purchaseError, setPurchaseError] = useState("");
   const [purchaseResult, setPurchaseResult] = useState<{ pointsAwarded: number; referralBonus: number } | null>(null);
@@ -372,6 +391,87 @@ export default function AccountPage() {
     }
   }
 
+  const loadCoupons = useCallback(async (s: Session) => {
+    setLoadingCoupons(true);
+    setCouponsLoadError("");
+    try {
+      const res = await fetch("/api/account/coupons", {
+        headers: { "x-account-mobile": s.mobile, "x-account-pin": s.pin },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCouponsLoadError(data.error || "Could not load coupons.");
+        return;
+      }
+      setCoupons(data.coupons || []);
+    } catch {
+      setCouponsLoadError("Network error. Please try again.");
+    } finally {
+      setLoadingCoupons(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (session && customer?.is_admin) loadCoupons(session);
+  }, [session, customer?.is_admin, loadCoupons]);
+
+  async function handleCreateCoupon(e: React.FormEvent) {
+    e.preventDefault();
+    if (!session || !couponMobile.trim()) return;
+    setSavingCoupon(true);
+    setCouponError("");
+    try {
+      const res = await fetch("/api/account/coupons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-account-mobile": session.mobile, "x-account-pin": session.pin },
+        body: JSON.stringify({ customerMobile: couponMobile.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCouponError(data.error || "Could not create coupon.");
+        return;
+      }
+      setCouponMobile("");
+      loadCoupons(session);
+    } catch {
+      setCouponError("Network error. Please try again.");
+    } finally {
+      setSavingCoupon(false);
+    }
+  }
+
+  async function handleRedeemCoupon(id: string) {
+    if (!session) return;
+    try {
+      await fetch(`/api/account/coupons?id=${id}`, {
+        method: "PATCH",
+        headers: { "x-account-mobile": session.mobile, "x-account-pin": session.pin },
+      });
+      loadCoupons(session);
+    } catch {
+      // no-op — admin can retry
+    }
+  }
+
+  async function handleDeleteCoupon(id: string) {
+    if (!session) return;
+    if (!confirm("Delete this coupon?")) return;
+    try {
+      await fetch(`/api/account/coupons?id=${id}`, {
+        method: "DELETE",
+        headers: { "x-account-mobile": session.mobile, "x-account-pin": session.pin },
+      });
+      loadCoupons(session);
+    } catch {
+      // no-op — admin can retry
+    }
+  }
+
+  function couponMessage(coupon: Coupon, name: string) {
+    const expiry = new Date(coupon.expires_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+    return `🎉 Congratulations ${name}! You've won a ₹${coupon.amount} Lucky Coupon from Bakasura Biryani!\n\nYour code: ${coupon.code}\n\nValid only for WEBSITE ORDERS, TAKEAWAY only. Not valid on Swiggy, Zomato, or any other delivery platform. Show this code when you order. Valid until ${expiry}.\n\nThank you for being a loyal customer!`;
+  }
+
   function handleUnlock(e: React.FormEvent) {
     e.preventDefault();
     if (!mobileInput.trim() || !pinInput.trim() || (lockedUntil && nowTick < lockedUntil)) return;
@@ -387,7 +487,7 @@ export default function AccountPage() {
     setCustomers([]);
   }
 
-  async function handleOnboarding(action: "email" | "whatsapp" | "feedback", payload?: Record<string, string>) {
+  async function handleOnboarding(action: "subscribe" | "whatsapp" | "feedback", payload?: Record<string, string>) {
     if (!session) return;
     const res = await fetch("/api/account/onboarding", {
       method: "POST",
@@ -409,18 +509,15 @@ export default function AccountPage() {
     );
   }
 
-  async function handleSubscribeEmail(e: React.FormEvent) {
-    e.preventDefault();
-    if (!onboardingEmail.trim()) return;
-    setSavingEmail(true);
-    setEmailError("");
+  async function handleSubscribe() {
+    setSavingSubscribe(true);
+    setSubscribeError("");
     try {
-      await handleOnboarding("email", { email: onboardingEmail.trim() });
-      setOnboardingEmail("");
+      await handleOnboarding("subscribe");
     } catch (err) {
-      setEmailError(err instanceof Error ? err.message : "Could not subscribe.");
+      setSubscribeError(err instanceof Error ? err.message : "Could not subscribe.");
     } finally {
-      setSavingEmail(false);
+      setSavingSubscribe(false);
     }
   }
 
@@ -514,6 +611,7 @@ export default function AccountPage() {
           biryaniCount: Number(purchase.biryaniCount),
           amount: Number(purchase.amount),
           referredBy: purchase.referredBy,
+          orderSource: purchase.orderSource,
         }),
       });
       const data = await res.json();
@@ -522,7 +620,7 @@ export default function AccountPage() {
         return;
       }
       setPurchaseResult({ pointsAwarded: data.pointsAwarded, referralBonus: data.referralBonus });
-      setPurchase({ customerMobile: "", biryaniCount: "", amount: "", referredBy: "" });
+      setPurchase({ customerMobile: "", biryaniCount: "", amount: "", referredBy: "", orderSource: "whatsapp" });
       loadCustomers(session);
       loadPurchases(session);
     } catch {
@@ -707,28 +805,22 @@ export default function AccountPage() {
               {currentStep === 1 && (
                 <div className="card-glass mx-auto mt-6 max-w-lg rounded-3xl px-6 py-7 text-center sm:px-8">
                   <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 ring-1 ring-gold-deep/25">
-                    <Mail size={20} className="text-gold-deep" />
+                    <Phone size={20} className="text-gold-deep" />
                   </span>
-                  <p className="mt-4 font-display text-lg font-bold text-ink">Step 1: Subscribe by Email</p>
-                  <p className="mt-2 text-sm text-cocoa/70">Get offers and updates from us — required to unlock your dashboard.</p>
-                  <form onSubmit={handleSubscribeEmail} className="mx-auto mt-5 flex max-w-sm flex-col gap-2.5">
-                    <input
-                      type="email"
-                      required
-                      value={onboardingEmail}
-                      onChange={(e) => setOnboardingEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="rounded-xl border border-gold-deep/25 bg-white/60 px-4 py-2.5 text-sm text-ink outline-none transition focus:border-gold-deep"
-                    />
+                  <p className="mt-4 font-display text-lg font-bold text-ink">Step 1: Subscribe for Updates</p>
+                  <p className="mt-2 text-sm text-cocoa/70">
+                    Get offers and updates on <span className="font-semibold text-ink">{displayMobile(customer.mobile)}</span> — required to unlock your dashboard.
+                  </p>
+                  <div className="mx-auto mt-5 max-w-sm">
                     <button
-                      type="submit"
-                      disabled={savingEmail}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-deep via-gold to-gold-bright px-6 py-2.5 text-sm font-bold uppercase tracking-wide text-ink transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={handleSubscribe}
+                      disabled={savingSubscribe}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-deep via-gold to-gold-bright px-6 py-2.5 text-sm font-bold uppercase tracking-wide text-ink transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {savingEmail ? <Loader2 size={15} className="animate-spin" /> : "Subscribe & Continue"}
+                      {savingSubscribe ? <Loader2 size={15} className="animate-spin" /> : "Subscribe & Continue"}
                     </button>
-                  </form>
-                  {emailError && <p className="mt-2 text-xs text-maroon-bright">{emailError}</p>}
+                  </div>
+                  {subscribeError && <p className="mt-2 text-xs text-maroon-bright">{subscribeError}</p>}
                 </div>
               )}
 
@@ -935,6 +1027,7 @@ export default function AccountPage() {
               { key: "purchase", label: "Record Purchase", icon: ShoppingBag },
               { key: "history", label: "Purchase History", icon: Receipt },
               { key: "feedback", label: "Feedback", icon: MessageSquareText },
+              { key: "coupons", label: "Lucky Coupons", icon: Ticket },
               { key: "redeem", label: "Redeem", icon: Gift },
               { key: "form", label: editingMobile ? "Edit Customer" : "Add Customer", icon: editingMobile ? Pencil : Plus },
             ] as { key: AdminTab; label: string; icon: typeof Users }[]).map(({ key, label, icon: Icon }) => (
@@ -1026,9 +1119,9 @@ export default function AccountPage() {
                 <p className="font-display text-base font-bold text-ink">Rewards Onboarding</p>
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="flex items-center gap-2.5 rounded-2xl border border-gold-deep/20 bg-white/40 px-4 py-3">
-                    {c.email_subscribed ? <CheckCircle2 size={16} className="shrink-0 text-emerald" /> : <Mail size={16} className="shrink-0 text-cocoa/40" />}
+                    {c.email_subscribed ? <CheckCircle2 size={16} className="shrink-0 text-emerald" /> : <Phone size={16} className="shrink-0 text-cocoa/40" />}
                     <div>
-                      <p className="text-sm font-semibold text-ink">{c.email_subscribed ? "Subscribed by email" : "Not subscribed"}</p>
+                      <p className="text-sm font-semibold text-ink">{c.email_subscribed ? "Subscribed" : "Not subscribed"}</p>
                       {c.email && <p className="text-xs text-cocoa/50">{c.email}</p>}
                     </div>
                   </div>
@@ -1205,7 +1298,20 @@ export default function AccountPage() {
             />
           </div>
 
-          <div className="flex flex-col gap-1.5 sm:col-span-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wide text-cocoa/70">Order Source</label>
+            <select
+              value={purchase.orderSource}
+              onChange={(e) => setPurchase((p) => ({ ...p, orderSource: e.target.value }))}
+              className="rounded-xl border border-gold-deep/25 bg-white/50 px-4 py-2.5 text-sm text-ink outline-none transition focus:border-gold-deep"
+            >
+              <option value="whatsapp">WhatsApp / Phone</option>
+              <option value="website">Website</option>
+              <option value="walkin">Walk-in</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-cocoa/70">Referred By (mobile, optional)</label>
             <input
               type="tel"
@@ -1271,7 +1377,7 @@ export default function AccountPage() {
             <p className="mt-4 text-sm text-cocoa/60">No purchases match that mobile number.</p>
           ) : (
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-sm">
+              <table className="w-full min-w-[800px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-gold-deep/15 text-xs uppercase tracking-wide text-cocoa/50">
                     <th className="pb-2 pr-4 font-semibold">Date</th>
@@ -1280,6 +1386,7 @@ export default function AccountPage() {
                     <th className="pb-2 pr-4 font-semibold">Amount</th>
                     <th className="pb-2 pr-4 font-semibold">Points</th>
                     <th className="pb-2 pr-4 font-semibold">Referral Bonus</th>
+                    <th className="pb-2 pr-4 font-semibold">Source</th>
                     <th className="pb-2 font-semibold"></th>
                   </tr>
                 </thead>
@@ -1297,6 +1404,7 @@ export default function AccountPage() {
                         <td className="py-2.5 pr-4 text-cocoa/60">
                           {p.referral_bonus > 0 ? `${rupees(p.referral_bonus)} → ${referrer?.name || displayMobile(p.referrer_mobile!)}` : "—"}
                         </td>
+                        <td className="py-2.5 pr-4 text-xs capitalize text-cocoa/50">{p.order_source}</td>
                         <td className="py-2.5 text-right">
                           <button
                             onClick={() => handleDeletePurchase(p.id)}
@@ -1383,6 +1491,145 @@ export default function AccountPage() {
           )}
         </div>
         )}
+
+        {/* Lucky coupons */}
+        {activeTab === "coupons" && (() => {
+          const now = new Date();
+          const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          const thisMonthCount = coupons.filter((c) => c.month === thisMonth).length;
+          return (
+            <div className="mt-6 flex flex-col gap-6">
+              <form
+                onSubmit={handleCreateCoupon}
+                className="card-glass grid grid-cols-1 gap-4 rounded-3xl px-6 py-7 text-left sm:grid-cols-3 sm:px-8"
+              >
+                <div className="sm:col-span-3 flex items-center gap-2">
+                  <Ticket size={17} className="text-gold-deep" />
+                  <p className="font-display text-base font-bold text-ink">Add a Lucky Coupon Winner</p>
+                </div>
+                <div className="flex flex-col gap-1.5 sm:col-span-2">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-cocoa/70">Winner&apos;s Mobile</label>
+                  <input
+                    type="tel"
+                    required
+                    value={couponMobile}
+                    onChange={(e) => setCouponMobile(e.target.value)}
+                    placeholder="10-digit mobile"
+                    className="rounded-xl border border-gold-deep/25 bg-white/50 px-4 py-2.5 text-sm text-ink outline-none transition focus:border-gold-deep"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    disabled={savingCoupon}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-deep via-gold to-gold-bright px-6 py-2.5 text-sm font-bold uppercase tracking-wide text-ink transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {savingCoupon ? <Loader2 size={15} className="animate-spin" /> : <Ticket size={15} />}
+                    {savingCoupon ? "Generating..." : "Generate ₹1000 Coupon"}
+                  </button>
+                </div>
+                {couponError && <p className="text-sm text-maroon-bright sm:col-span-3">{couponError}</p>}
+                <p className="text-xs text-cocoa/50 sm:col-span-3">
+                  {thisMonthCount} winner{thisMonthCount === 1 ? "" : "s"} picked so far this month ({thisMonth}). Valid for website orders, takeaway only — not valid on Swiggy/Zomato. Enforced at redemption.
+                </p>
+              </form>
+
+              <div className="card-glass rounded-3xl px-6 py-7 sm:px-8">
+                <div className="flex items-center gap-2">
+                  <Ticket size={17} className="text-gold-deep" />
+                  <p className="font-display text-base font-bold text-ink">
+                    Coupons {coupons.length > 0 && `(${coupons.length})`}
+                  </p>
+                </div>
+
+                {loadingCoupons ? (
+                  <p className="mt-4 flex items-center gap-2 text-sm text-cocoa/60">
+                    <Loader2 size={14} className="animate-spin" />
+                    Loading...
+                  </p>
+                ) : couponsLoadError ? (
+                  <p className="mt-4 text-sm text-maroon-bright">{couponsLoadError}</p>
+                ) : coupons.length === 0 ? (
+                  <p className="mt-4 text-sm text-cocoa/60">No coupons issued yet.</p>
+                ) : (
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full min-w-[800px] text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-gold-deep/15 text-xs uppercase tracking-wide text-cocoa/50">
+                          <th className="pb-2 pr-4 font-semibold">Month</th>
+                          <th className="pb-2 pr-4 font-semibold">Winner</th>
+                          <th className="pb-2 pr-4 font-semibold">Code</th>
+                          <th className="pb-2 pr-4 font-semibold">Amount</th>
+                          <th className="pb-2 pr-4 font-semibold">Expires</th>
+                          <th className="pb-2 pr-4 font-semibold">Status</th>
+                          <th className="pb-2 font-semibold"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {coupons.map((c) => {
+                          const winner = customers.find((x) => x.mobile === c.customer_mobile);
+                          const expired = !c.redeemed && new Date(c.expires_at) < now;
+                          return (
+                            <tr key={c.id} className="border-b border-gold-deep/10 text-cocoa/80">
+                              <td className="py-2.5 pr-4 text-xs text-cocoa/60">{c.month}</td>
+                              <td className="py-2.5 pr-4 font-medium text-ink">
+                                {winner?.name || displayMobile(c.customer_mobile)}
+                                <div className="text-xs font-normal text-cocoa/50">{displayMobile(c.customer_mobile)}</div>
+                              </td>
+                              <td className="py-2.5 pr-4 font-mono text-xs font-semibold text-gold-deep">{c.code}</td>
+                              <td className="py-2.5 pr-4">{rupees(c.amount)}</td>
+                              <td className="py-2.5 pr-4 text-xs text-cocoa/60">{formatDateTime(c.expires_at)}</td>
+                              <td className="py-2.5 pr-4">
+                                {c.redeemed ? (
+                                  <span className="rounded-full bg-emerald/10 px-2 py-0.5 text-xs font-semibold text-emerald">Redeemed</span>
+                                ) : expired ? (
+                                  <span className="rounded-full bg-cocoa/10 px-2 py-0.5 text-xs font-semibold text-cocoa/50">Expired</span>
+                                ) : (
+                                  <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-semibold text-gold-deep">Active</span>
+                                )}
+                              </td>
+                              <td className="py-2.5 text-right">
+                                <div className="flex items-center justify-end gap-2.5">
+                                  {!c.redeemed && (
+                                    <>
+                                      <a
+                                        href={`https://wa.me/${c.customer_mobile}?text=${encodeURIComponent(couponMessage(c, winner?.name || "there"))}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label="Send via WhatsApp"
+                                        className="text-cocoa/40 transition hover:text-[#25D366]"
+                                      >
+                                        <MessageCircle size={14} />
+                                      </a>
+                                      <button
+                                        onClick={() => handleRedeemCoupon(c.id)}
+                                        aria-label="Mark redeemed"
+                                        className="text-cocoa/40 transition hover:text-emerald"
+                                      >
+                                        <CheckCircle2 size={14} />
+                                      </button>
+                                    </>
+                                  )}
+                                  <button
+                                    onClick={() => handleDeleteCoupon(c.id)}
+                                    aria-label="Delete coupon"
+                                    className="text-cocoa/40 transition hover:text-maroon-bright"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Redeem referral balance */}
         {activeTab === "redeem" && (

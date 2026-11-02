@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Clock, MapPin, Phone, Flame } from "lucide-react";
+import OrderModal from "./OrderModal";
 
 export default function HoursBanner() {
+  const [orderOpen, setOrderOpen] = useState(false);
+
   return (
     <section className="relative z-10 overflow-hidden bg-gradient-to-br from-[#0f2417] via-[#16281a] to-[#2a1608] px-5 py-14 sm:py-16">
       <div className="pointer-events-none absolute inset-0 bg-noise opacity-40" />
@@ -29,15 +33,13 @@ export default function HoursBanner() {
           </div>
         </div>
 
-        <a
-          href="https://wa.me/917330922131?text=Hi%2C%20I%27d%20like%20to%20order%20Bakasura%20Biryani!"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => setOrderOpen(true)}
           className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-gold-deep via-gold to-gold-bright px-9 py-4 text-sm font-bold uppercase tracking-wide text-ink shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition hover:scale-105"
         >
           <Flame size={17} />
           Order Now
-        </a>
+        </button>
 
         <div className="flex flex-col items-center gap-2 lg:items-end">
           <a href="tel:+917330922131" className="flex items-center gap-2 text-sm text-white/80 transition hover:text-gold">
@@ -50,6 +52,8 @@ export default function HoursBanner() {
           </p>
         </div>
       </motion.div>
+
+      <OrderModal open={orderOpen} onClose={() => setOrderOpen(false)} />
     </section>
   );
 }

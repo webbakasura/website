@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ChevronDown, Flame, Crown, Leaf, Sparkles } from "lucide-react";
+import OrderModal from "./OrderModal";
 
 const BADGES = [
   { icon: Flame, label: "Dum Cooked Fresh", color: "text-terracotta" },
@@ -38,6 +40,8 @@ const FLOATING_CARDS = [
 ];
 
 export default function Hero() {
+  const [orderOpen, setOrderOpen] = useState(false);
+
   return (
     <section
       id="top"
@@ -86,15 +90,13 @@ export default function Hero() {
             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
             className="mt-8 flex flex-col items-center gap-5 sm:flex-row lg:justify-start"
           >
-            <a
-              href="https://wa.me/917330922131?text=Hi%2C%20I%27d%20like%20to%20order%20Bakasura%20Biryani!"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => setOrderOpen(true)}
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-deep via-gold to-gold-bright px-8 py-3.5 text-sm font-bold uppercase tracking-wide text-ink shadow-[0_10px_30px_rgba(156,107,14,0.3)] transition hover:scale-105"
             >
               <Flame size={17} />
               Order Now
-            </a>
+            </button>
             <a
               href="#menu"
               className="group inline-flex items-center gap-2.5 text-sm font-bold uppercase tracking-wide text-ink transition hover:text-gold-deep"
@@ -167,6 +169,8 @@ export default function Hero() {
       >
         <ChevronDown size={26} />
       </motion.a>
+
+      <OrderModal open={orderOpen} onClose={() => setOrderOpen(false)} />
     </section>
   );
 }

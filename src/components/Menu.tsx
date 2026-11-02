@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Flame } from "lucide-react";
+import OrderModal from "./OrderModal";
 
 type Dish = {
   name: string;
@@ -39,6 +41,30 @@ const DISHES: Dish[] = [
     image: "/images/egg-biryani.jpg",
     comingSoon: true,
   },
+  {
+    name: "Chicken Leg Piece",
+    desc: "Juicy, marinated chicken leg pieces, slow-cooked in our signature spice blend.",
+    spice: 2,
+    tone: "from-[#a8471c] via-[#8a2f1f] to-[#3a1a12]",
+    image: "/images/chicken-leg-piece.jpg",
+    comingSoon: true,
+  },
+  {
+    name: "Chicken Pakodi",
+    desc: "Crispy, golden-fried chicken bites — the perfect starter or snack.",
+    spice: 2,
+    tone: "from-[#d3a13a] via-[#a8781f] to-[#5c3a10]",
+    image: "/images/chicken-pakodi.jpg",
+    comingSoon: true,
+  },
+  {
+    name: "Bagara Rice with Paneer",
+    desc: "Fragrant Hyderabadi bagara rice tempered with whole spices, served with soft paneer.",
+    spice: 1,
+    tone: "from-[#8aa05a] via-[#5f7a3a] to-[#2f3f1c]",
+    image: "/images/bagara-rice-paneer.jpg",
+    comingSoon: true,
+  },
 ];
 
 function DishPlate({ tone, muted }: { tone: string; muted?: boolean }) {
@@ -69,6 +95,8 @@ function DishPhoto({ src, alt, muted }: { src: string; alt: string; muted?: bool
 }
 
 export default function Menu() {
+  const [orderDish, setOrderDish] = useState<string | null>(null);
+
   return (
     <section id="menu" className="relative z-10 px-5 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl">
@@ -128,22 +156,20 @@ export default function Menu() {
                     Coming Soon
                   </span>
                 ) : (
-                  <a
-                    href={`https://wa.me/917330922131?text=${encodeURIComponent(
-                      `Hi, I'd like to order ${dish.name}.`
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => setOrderDish(dish.name)}
                     className="inline-flex w-full items-center justify-center rounded-full border border-gold-deep/30 px-4 py-2 text-xs font-bold uppercase tracking-wide text-gold-deep transition group-hover:border-gold-deep group-hover:bg-gold-deep group-hover:text-white"
                   >
                     Order on WhatsApp
-                  </a>
+                  </button>
                 )}
               </div>
             </motion.div>
           ))}
         </div>
       </div>
+
+      <OrderModal open={orderDish !== null} onClose={() => setOrderDish(null)} itemName={orderDish || undefined} />
     </section>
   );
 }

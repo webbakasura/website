@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
   const amount = Number(body.amount);
   const referredByRaw = typeof body.referredBy === "string" ? body.referredBy.trim() : "";
   const referredByInput = referredByRaw ? normalizeMobile(referredByRaw) : "";
+  const orderSourceRaw = typeof body.orderSource === "string" ? body.orderSource : "whatsapp";
+  const orderSource = ["website", "whatsapp", "walkin"].includes(orderSourceRaw) ? orderSourceRaw : "whatsapp";
 
   if (!customerMobile || !Number.isFinite(biryaniCount) || biryaniCount <= 0 || !Number.isFinite(amount) || amount < 0) {
     return NextResponse.json({ error: "A customer, biryani count, and amount are required." }, { status: 400 });
@@ -116,6 +118,7 @@ export async function POST(req: NextRequest) {
     referrer_mobile: referrerMobile,
     points_awarded: pointsAwarded,
     referral_bonus: referralBonus,
+    order_source: orderSource,
   });
   if (purchaseError) {
     return NextResponse.json({ error: "Could not record purchase." }, { status: 500 });

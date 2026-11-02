@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { PartyPopper, Users, CalendarCheck2, Utensils, MessageCircle } from "lucide-react";
+import OrderModal from "./OrderModal";
 
 const POINTS = [
   { icon: Users, text: "Perfect for weddings, birthdays & family functions" },
@@ -10,6 +12,8 @@ const POINTS = [
 ];
 
 export default function BulkOrders() {
+  const [orderOpen, setOrderOpen] = useState(false);
+
   return (
     <section className="full-bleed relative z-10 overflow-hidden bg-gradient-to-br from-[#3a1710] via-[#5c1620] to-[#2a1608] px-5 py-16 sm:py-20">
       <div className="pointer-events-none absolute inset-0 bg-noise opacity-30" />
@@ -48,16 +52,20 @@ export default function BulkOrders() {
           </ul>
         </div>
 
-        <a
-          href="https://wa.me/917330922131?text=Hi%2C%20I%27d%20like%20to%20place%20a%20bulk%2Fparty%20order%20for%20Bakasura%20Biryani.%20Could%20you%20share%20details%3F"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => setOrderOpen(true)}
           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-deep via-gold to-gold-bright px-9 py-4 text-sm font-bold uppercase tracking-wide text-ink shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition hover:scale-105"
         >
           <MessageCircle size={17} />
           Enquire for Bulk Orders
-        </a>
+        </button>
       </motion.div>
+
+      <OrderModal
+        open={orderOpen}
+        onClose={() => setOrderOpen(false)}
+        baseMessage="Hi, I'd like to place a bulk/party order for Bakasura Biryani. Could you share details?"
+      />
     </section>
   );
 }

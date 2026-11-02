@@ -2,19 +2,19 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Send, CheckCircle2, Lock } from "lucide-react";
+import { Phone, Send, CheckCircle2, Lock } from "lucide-react";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
 export default function Newsletter() {
-  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!mobile.trim()) return;
 
     setStatus("submitting");
     setErrorMsg("");
@@ -23,7 +23,7 @@ export default function Newsletter() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, website }),
+        body: JSON.stringify({ mobile, website }),
       });
       const data = await res.json();
 
@@ -34,7 +34,7 @@ export default function Newsletter() {
       }
 
       setStatus("success");
-      setEmail("");
+      setMobile("");
     } catch {
       setStatus("error");
       setErrorMsg("Network error. Please try again.");
@@ -81,14 +81,14 @@ export default function Newsletter() {
               className="hidden"
             />
             <div className="relative w-full max-w-xs sm:max-w-sm">
-              <Mail size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink/40" />
+              <Phone size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink/40" />
               <input
-                type="email"
+                type="tel"
                 required
-                maxLength={200}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Your email address"
+                maxLength={20}
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="Your mobile number"
                 className="w-full rounded-full border border-white/20 bg-white/95 py-3 pl-11 pr-4 text-sm text-ink placeholder:text-ink/40 outline-none transition focus:border-white"
               />
             </div>

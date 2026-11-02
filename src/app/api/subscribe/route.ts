@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabaseServer";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { normalizeMobile } from "@/lib/accountAuth";
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -11,22 +10,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { email, website } = body as Record<string, unknown>;
+  const { mobile: mobileRaw, website } = body as Record<string, unknown>;
 
   // Honeypot: real users never fill this hidden field.
   if (typeof website === "string" && website.trim() !== "") {
     return NextResponse.json({ ok: true });
   }
 
-  if (typeof email !== "string" || email.length > 200 || !EMAIL_RE.test(email.trim())) {
-    return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+  const mobile = normalizeMobile(typeof mobileRaw === "string" ? mobileRaw : "");
+  if (!/^\d{10,12}$/.test(mobile)) {
+    return NextResponse.json({ error: "Please enter a valid mobile number." }, { status: 400 });
   }
 
   try {
     const supabase = getSupabaseServer();
     const { error } = await supabase
       .from("subscribers")
-      .insert({ email: email.trim().toLowerCase() });
+      .insert({ mobile });
 
     if (error) {
       if (error.code === "23505") {
