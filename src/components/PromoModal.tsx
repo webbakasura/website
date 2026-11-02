@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Gift, Star, Wallet, LogIn } from "lucide-react";
+import { X, Gift, Star, Wallet, LogIn, Ticket } from "lucide-react";
 import { WhatsAppIcon } from "./icons";
 import LoginModal from "./LoginModal";
 
@@ -52,7 +52,7 @@ export default function PromoModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 16 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gold-deep/20 bg-paper px-7 py-8 text-center shadow-2xl"
+            className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-gold-deep/20 bg-paper px-7 py-8 text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -75,7 +75,7 @@ export default function PromoModal() {
             </h2>
             <p className="mt-1 text-sm text-cocoa/60">రిఫర్ చేయండి &amp; సంపాదించండి</p>
 
-            <div className="mt-6 flex flex-col gap-4 text-left">
+            <div className="mt-6 grid grid-cols-1 gap-4 text-left lg:grid-cols-3">
               <div className="flex items-start gap-3 rounded-2xl border border-gold-deep/20 bg-paper-soft px-4 py-3.5">
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald/15 ring-1 ring-emerald/30">
                   <Wallet size={16} className="text-emerald" />
@@ -102,6 +102,21 @@ export default function PromoModal() {
                   </p>
                   <p className="mt-1.5 text-sm text-cocoa/70">
                     మీరు ఆర్డర్ చేసే ప్రతి బిర్యానీకి లాయల్టీ పాయింట్లు లభిస్తాయి — మళ్ళీ వచ్చినందుకు ధన్యవాదాలు చెప్పే మా విధానం.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-2xl border border-maroon-bright/25 bg-maroon-bright/10 px-4 py-3.5">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-maroon-bright/15 ring-1 ring-maroon-bright/30">
+                  <Ticket size={16} className="text-maroon-bright" />
+                </span>
+                <div>
+                  <p className="font-display text-sm font-bold text-ink">Monthly Lucky Coupon</p>
+                  <p className="mt-0.5 text-sm text-cocoa/70">
+                    Every month, we treat 3 of our customers to a <span className="font-bold text-maroon-bright">₹1000</span> coupon — no sign-up, no entry needed. Takeaway &amp; website orders only, not valid on Swiggy or Zomato.
+                  </p>
+                  <p className="mt-1.5 text-sm text-cocoa/70">
+                    ప్రతి నెలా, మేము మా 3 మంది కస్టమర్లకు <span className="font-bold text-maroon-bright">₹1000</span> కూపన్ అందిస్తాము — సైన్ అప్ అవసరం లేదు. టేకావే &amp; వెబ్‌సైట్ ఆర్డర్లకు మాత్రమే, స్విగ్గీ/జొమాటోలో చెల్లదు.
                   </p>
                 </div>
               </div>

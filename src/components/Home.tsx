@@ -10,6 +10,7 @@ import Story from "./Story";
 import Team from "./Team";
 import Menu from "./Menu";
 import Offers from "./Offers";
+import LuckyCoupon from "./LuckyCoupon";
 import BulkOrders from "./BulkOrders";
 import WhyUs from "./WhyUs";
 import HoursBanner from "./HoursBanner";
@@ -29,6 +30,7 @@ export default function Home() {
       <Story />
       <Team />
       <Menu />
+      <LuckyCoupon />
       <Offers />
       <BulkOrders />
       <WhyUs />
