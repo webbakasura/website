@@ -13,7 +13,7 @@ const ADDRESS =
 const PHONE_DISPLAY = "+91 73309 22131";
 const PHONE_TEL = "+917330922131";
 const PHONE_WA = "917330922131";
-const MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ADDRESS)}`;
+const MAPS_URL = "https://maps.app.goo.gl/h7XCeyF9uTYJpbKS7";
 
 const CARDS = [
   {
@@ -44,7 +44,7 @@ const CARDS = [
   {
     icon: Clock,
     title: "Hours",
-    lines: ["12:00 PM – 3:00 PM", "6:00 PM – 9:00 PM, Daily"],
+    lines: ["12:00 PM – 10:00 PM, Daily"],
     action: null,
     iconBg: "bg-gold/10 ring-gold-deep/25",
     iconColor: "text-gold-deep",
@@ -123,26 +123,28 @@ export default function ContactPage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 + i * 0.1, ease: "easeOut" }}
-            className="card-glass flex flex-col items-center gap-3 rounded-2xl px-6 py-8 text-center"
+            className="card-glass flex h-full flex-col items-center gap-3 rounded-2xl px-6 py-8 text-center"
           >
-            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ring-1 ${card.iconBg}`}>
-              <card.icon size={20} className={card.iconColor} />
-            </div>
-            <p className="font-display text-base font-bold text-ink">{card.title}</p>
-            <div className="text-sm leading-relaxed text-cocoa/75">
-              {card.subtitle && (
-                <p className="mb-1 font-semibold text-gold-deep">{card.subtitle}</p>
-              )}
-              {card.lines.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
+            <div className="flex flex-1 flex-col items-center gap-3">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ring-1 ${card.iconBg}`}>
+                <card.icon size={20} className={card.iconColor} />
+              </div>
+              <p className="font-display text-base font-bold text-ink">{card.title}</p>
+              <div className="text-sm leading-relaxed text-cocoa/75">
+                {card.subtitle && (
+                  <p className="mb-1 font-semibold text-gold-deep">{card.subtitle}</p>
+                )}
+                {card.lines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
             </div>
             {card.action && (
               <a
                 href={card.action.href}
                 target={card.action.external ? "_blank" : undefined}
                 rel={card.action.external ? "noopener noreferrer" : undefined}
-                className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-gold-deep/30 px-4 py-2 text-xs font-bold uppercase tracking-wide text-gold-deep transition hover:border-gold-deep hover:bg-gold/10"
+                className="mt-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-gold-deep/30 px-4 py-2 text-xs font-bold uppercase tracking-wide text-gold-deep transition hover:border-gold-deep hover:bg-gold/10"
               >
                 <card.action.icon size={13} />
                 {card.action.label}

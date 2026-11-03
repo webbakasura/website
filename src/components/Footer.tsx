@@ -110,7 +110,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <Clock size={15} className="shrink-0 text-gold-deep" />
-                12–3 PM &amp; 6–9 PM, Daily
+                12 PM – 10 PM, Daily
               </li>
             </ul>
           </div>

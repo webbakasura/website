@@ -29,7 +29,7 @@ export default function HoursBanner() {
             <p className="font-display text-sm font-bold uppercase tracking-wide text-white">
               Open Daily
             </p>
-            <p className="text-sm text-white/70">12:00 PM – 3:00 PM &amp; 6:00 PM – 9:00 PM</p>
+            <p className="text-sm text-white/70">12:00 PM – 10:00 PM</p>
           </div>
         </div>
 
